@@ -1,0 +1,378 @@
+// KOSOVO 2036 — HUMAN NETWORK — Phase 2 schema.
+//
+// Datasource: SQLite (see docs/ARCHITECTURE.md "Database" for why this
+// deviates from the scope's suggested PostgreSQL and how to switch later).
+// All content that migrations seed is fictional 2036 demo data.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// Accounts, roles, safety
+// ---------------------------------------------------------------------------
+
+enum Role {
+  MEMBER
+  ORGANIZER
+  MODERATOR
+  MUNICIPALITY_ANALYST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(MEMBER)
+  name         String
+  nameSq       String?
+  bio          String?
+  bioSq        String?
+  /// Opt-in only. Off by default — no field here is shown publicly unless
+  /// this is explicitly true (see src/lib/data/profile.ts projections).
+  isDiscoverable Boolean @default(false)
+  /// Demo-only flag identifying seeded fictional personas vs. anything a
+  /// visitor creates through /login in this prototype. Never used for
+  /// authorization — role does that.
+  isDemoPersona  Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  interests        UserInterest[]
+  memberships      Membership[]
+  organizedCommunities Community[]      @relation("CommunityOrganizer")
+  organizedActivities  Activity[]       @relation("ActivityOrganizer")
+  rsvps            Rsvp[]
+  projectVolunteers ProjectVolunteer[]
+  needsSubmitted    CommunityNeed[]     @relation("NeedSubmitter")
+  reportsFiled      Report[]            @relation("ReportReporter")
+  reportsModerated  Report[]            @relation("ReportModerator")
+
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Interests (fixed catalog — ids/labels defined in src/lib/types.ts;
+// this table exists only to give UserInterest / ActivityInterest a real FK).
+// ---------------------------------------------------------------------------
+
+model Interest {
+  id      String @id // matches InterestId in src/lib/types.ts, e.g. "technology"
+  labelEn String
+  labelSq String
+  emoji   String
+
+  users      UserInterest[]
+  activities ActivityInterest[]
+}
+
+model UserInterest {
+  userId     String
+  interestId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+}
+
+// ---------------------------------------------------------------------------
+// Communities & membership
+// ---------------------------------------------------------------------------
+
+enum ActivityCategory {
+  SPORTS
+  EDUCATION
+  CULTURE
+  COMMUNITY
+  TECHNOLOGY
+  ENVIRONMENT
+}
+
+enum Visibility {
+  PUBLIC
+  RESTRICTED
+}
+
+model Community {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  nameSq      String?
+  category    ActivityCategory
+  description   String
+  descriptionSq String
+  areaSq      String
+  visibility  Visibility @default(PUBLIC)
+  /// Demo-only "verified organizer" badge, matching the Phase 1 seed data's
+  /// organizer.verified flag. Not a real verification process.
+  verified    Boolean    @default(false)
+  organizerId String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  organizer   User          @relation("CommunityOrganizer", fields: [organizerId], references: [id])
+  memberships Membership[]
+  activities  Activity[]
+  projects    Project[]
+  needs       CommunityNeed[]
+  bridgeAsA   BridgeProposal[] @relation("BridgeCommunityA")
+  bridgeAsB   BridgeProposal[] @relation("BridgeCommunityB")
+}
+
+enum MembershipRole {
+  MEMBER
+  ORGANIZER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PENDING
+}
+
+model Membership {
+  id          String           @id @default(cuid())
+  userId      String
+  communityId String
+  role        MembershipRole   @default(MEMBER)
+  status      MembershipStatus @default(ACTIVE)
+  joinedAt    DateTime         @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@index([communityId])
+}
+
+// ---------------------------------------------------------------------------
+// Activities (events) & RSVPs
+// ---------------------------------------------------------------------------
+
+enum AgeEligibility {
+  ALL_AGES
+  ADULTS_ONLY
+  SUPERVISED_MINORS
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum Cost {
+  FREE
+  PAID
+}
+
+enum ActivityStatus {
+  PUBLISHED
+  CANCELED
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  titleSq     String
+  summary     String
+  summarySq   String
+  category    ActivityCategory
+  areaSq      String
+  areaEn      String
+  venueName   String
+  /// Approximate public coordinates for a public venue — never a private
+  /// user location. See docs/PRODUCT_CONTRACT.md non-negotiable boundaries.
+  lat         Float
+  lng         Float
+  date        String // ISO date "2036-06-13" — Kosovo has one civil timezone, stored + displayed as Europe/Prishtina (see docs/ARCHITECTURE.md).
+  startTime   String // "18:00" local Europe/Prishtina time
+  timezone    String   @default("Europe/Prishtina")
+  capacity    Int
+  /// Fictional 2036-scenario attendance baseline seeded alongside the
+  /// activity itself — distinct from real Rsvp rows created by demo
+  /// accounts through this app. Documented in docs/DEMO_DATA.md. Real
+  /// capacity enforcement always adds confirmed Rsvp rows on top of this.
+  simulatedRsvpBaseline Int @default(0)
+  cost        Cost
+  costDetail  String?
+  indoor      Boolean
+  accessibility String // comma-separated tags (SQLite has no native array type)
+  ageEligibility AgeEligibility
+  difficulty  Difficulty
+  status      ActivityStatus @default(PUBLISHED)
+  description   String
+  descriptionSq String
+  organizerId String
+  communityId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizer  User               @relation("ActivityOrganizer", fields: [organizerId], references: [id])
+  community  Community          @relation(fields: [communityId], references: [id])
+  interests  ActivityInterest[]
+  rsvps      Rsvp[]
+  reports    Report[]
+
+  @@index([category])
+  @@index([communityId])
+}
+
+model ActivityInterest {
+  activityId String
+  interestId String
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, interestId])
+}
+
+enum RsvpStatus {
+  CONFIRMED
+  CANCELED
+}
+
+model Rsvp {
+  id         String     @id @default(cuid())
+  userId     String
+  activityId String
+  status     RsvpStatus @default(CONFIRMED)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+  @@index([activityId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Projects (Phase 4 UI, schema laid down now per Phase 2 mission)
+// ---------------------------------------------------------------------------
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  communityId String
+  title       String
+  titleSq     String
+  description   String
+  descriptionSq String
+  status      ProjectStatus @default(ACTIVE)
+  volunteersNeeded Int
+  createdAt   DateTime      @default(now())
+
+  community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  volunteers ProjectVolunteer[]
+}
+
+enum VolunteerStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+model ProjectVolunteer {
+  id        String          @id @default(cuid())
+  userId    String
+  projectId String
+  status    VolunteerStatus @default(ACTIVE)
+  joinedAt  DateTime        @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Community needs (Phase 4 UI / Phase 7 aggregation input)
+// ---------------------------------------------------------------------------
+
+enum NeedStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model CommunityNeed {
+  id          String     @id @default(cuid())
+  communityId String?
+  category    ActivityCategory
+  areaSq      String
+  description String
+  status      NeedStatus @default(OPEN)
+  /// Never exposed in any public or municipality-facing projection —
+  /// see src/lib/data/needs.ts and docs/PRODUCT_CONTRACT.md.
+  submittedById String
+  createdAt   DateTime   @default(now())
+
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  submittedBy User       @relation("NeedSubmitter", fields: [submittedById], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// BRIDGE (schema placeholder — logic arrives in Phase 5)
+// ---------------------------------------------------------------------------
+
+enum BridgeStatus {
+  SUGGESTED
+  SAVED
+  ACCEPTED
+  DECLINED
+}
+
+model BridgeProposal {
+  id            String       @id @default(cuid())
+  communityAId  String
+  communityBId  String
+  reason        String
+  status        BridgeStatus @default(SUGGESTED)
+  createdAt     DateTime     @default(now())
+
+  communityA Community @relation("BridgeCommunityA", fields: [communityAId], references: [id], onDelete: Cascade)
+  communityB Community @relation("BridgeCommunityB", fields: [communityBId], references: [id], onDelete: Cascade)
+
+  @@unique([communityAId, communityBId])
+}
+
+// ---------------------------------------------------------------------------
+// Safety / moderation
+// ---------------------------------------------------------------------------
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String
+  activityId   String?
+  reason       String
+  status       ReportStatus @default(OPEN)
+  moderatorId  String?
+  moderatorNote String?
+  createdAt    DateTime     @default(now())
+  resolvedAt   DateTime?
+
+  reporter  User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  moderator User?     @relation("ReportModerator", fields: [moderatorId], references: [id])
+  activity  Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}

@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf7f2;
+  --surface: #ffffff;
+  --surface-muted: #f1ede4;
+  --foreground: #1c1b1a;
+  --foreground-muted: #55524c;
+  --border: #e4ddd0;
+
+  --brand: #1d4e89;
+  --brand-strong: #163c6b;
+  --brand-tint: #e5edf7;
+
+  --accent: #e08a2c;
+  --accent-strong: #b96f1f;
+  --accent-tint: #fbead4;
+
+  --success: #2f7d4f;
+  --success-tint: #e2f2e7;
+  --danger: #b3413a;
+  --danger-tint: #f8e6e4;
+
+  --focus-ring: #1d4e89;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #12181f;
+    --surface: #1a222b;
+    --surface-muted: #212b36;
+    --foreground: #f3efe8;
+    --foreground-muted: #b7c0c9;
+    --border: #2b3742;
+
+    --brand: #6fa1de;
+    --brand-strong: #8fb6e6;
+    --brand-tint: #1c2b3d;
+
+    --accent: #f0a752;
+    --accent-strong: #f5bd77;
+    --accent-tint: #3a2d19;
+
+    --success: #6fca8f;
+    --success-tint: #16321f;
+    --danger: #e19089;
+    --danger-tint: #3a201e;
+
+    --focus-ring: #8fb6e6;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-tint: var(--brand-tint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-tint: var(--accent-tint);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.maplibregl-map {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}

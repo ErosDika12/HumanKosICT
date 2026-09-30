@@ -12,11 +12,11 @@
   --brand-strong: #163c6b;
   --brand-tint: #e5edf7;
 
-  --accent: #e08a2c;
-  --accent-strong: #b96f1f;
-  --accent-tint: #fbead4;
+  --accent: #e0a526;
+  --accent-strong: #7a5400;
+  --accent-tint: #fbf0d0;
 
-  --success: #2f7d4f;
+  --success: #2a7047;
   --success-tint: #e2f2e7;
   --danger: #b3413a;
   --danger-tint: #f8e6e4;
@@ -95,6 +95,17 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Prishtina-inspired hero: deep flag blue over a photo, with a gold rule. */
+.hero-overlay {
+  background:
+    linear-gradient(105deg, rgba(14, 32, 66, 0.92) 0%, rgba(20, 52, 105, 0.78) 45%, rgba(20, 52, 105, 0.25) 100%);
+}
+
+.gold-rule {
+  background: linear-gradient(90deg, var(--accent), transparent);
+  height: 3px;
 }
 
 .maplibregl-map {

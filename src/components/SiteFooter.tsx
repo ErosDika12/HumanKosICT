@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { DemoBadge } from "./DemoBadge";
+import { SIMULATED_NOW_LABEL } from "@/lib/simulated-clock";
 
 export function SiteFooter() {
   return (
@@ -11,10 +13,17 @@ export function SiteFooter() {
             prototip janë fiktive dhe shërbejnë vetëm për demonstrim. Asnjë e dhënë nuk përfaqëson
             gjetje reale komunale apo persona realë.
           </p>
+          <p className="max-w-lg text-xs text-foreground-muted" title="A fixed in-universe date, not the real current date — see docs/ARCHITECTURE.md.">
+            Simulated &quot;today&quot; inside this 2036 scenario: <strong>{SIMULATED_NOW_LABEL}</strong> — not
+            the real current date.
+          </p>
         </div>
-        <p className="text-xs text-foreground-muted">
-          KOSOVO 2036 — HUMAN NETWORK · Interactive prototype, Phase 1
-        </p>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground-muted">
+          <Link href="/needs" className="underline underline-offset-2">Community needs</Link>
+          <Link href="/impact" className="underline underline-offset-2">My impact</Link>
+          <Link href="/municipality" className="underline underline-offset-2">Municipality view</Link>
+          <Link href="/credits" className="underline underline-offset-2">Photo credits</Link>
+        </nav>
       </div>
     </footer>
   );

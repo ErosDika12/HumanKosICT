@@ -6,25 +6,30 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
-    "postinstall": "prisma generate && node scripts/copy-maplibre-worker.mjs",
+    "postinstall": "prisma generate && prisma generate --schema prisma/schema.production.prisma && node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "prisma generate --schema prisma/schema.production.prisma && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
-    "test": "tsx scripts/test-setup.ts && node --conditions=react-server --import tsx --import ./tests/setup.ts --test tests/*.test.ts"
+    "db:migrate:prod": "prisma migrate deploy --config prisma.production.config.ts",
+    "db:seed:prod": "prisma db seed --config prisma.production.config.ts",
+    "db:generate:prod": "prisma generate --schema prisma/schema.production.prisma",
+    "test": "tsx scripts/test-setup.ts && node --conditions=react-server --import tsx --import ./tests/setup.ts --test --test-concurrency=1 tests/*.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.4.1",
     "jose": "^6.2.12",
     "maplibre-gl": "^6.11.2",
     "next": "16.3.6",
+    "pg": "^8.23.0",
     "prisma": "^7.10.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",

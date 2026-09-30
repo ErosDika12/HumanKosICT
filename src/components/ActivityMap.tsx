@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
+import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { DemoActivity } from "@/lib/types";
 
@@ -21,7 +21,7 @@ if (typeof window !== "undefined") {
 const PRISHTINA_CENTER: [number, number] = [21.1655, 42.6629];
 
 const CATEGORY_COLOR: Record<DemoActivity["category"], string> = {
-  sports: "#e08a2c",
+  sports: "#8f5406",
   education: "#1d4e89",
   culture: "#8a4baf",
   community: "#2f7d4f",
@@ -29,21 +29,71 @@ const CATEGORY_COLOR: Record<DemoActivity["category"], string> = {
   environment: "#2f7d4f",
 };
 
+// Markers are never distinguished by color alone (WCAG — color-only
+// encoding fails for colorblind users). Each category also gets a short,
+// distinct text glyph rendered inside its marker, and the same glyph
+// labels the legend below the map.
+const CATEGORY_GLYPH: Record<DemoActivity["category"], string> = {
+  sports: "SP",
+  education: "ED",
+  culture: "CU",
+  community: "CO",
+  technology: "TE",
+  environment: "EN",
+};
+
+export const CATEGORY_LEGEND: { category: DemoActivity["category"]; label: string }[] = [
+  { category: "technology", label: "Technology" },
+  { category: "environment", label: "Environment" },
+  { category: "sports", label: "Sports" },
+  { category: "education", label: "Education" },
+  { category: "culture", label: "Culture" },
+  { category: "community", label: "Community" },
+];
+
 /**
- * Uses MapLibre's public demo vector style (no API key or tile provider
- * account required). If this style ever becomes unreachable, the component
- * falls back to an inline notice while Discover's list view keeps working.
+ * Uses OpenFreeMap's public OpenStreetMap-based vector style by default (no
+ * API key or account required; attribution shown on the map), but the source is configurable per the Phase
+ * 3 brief — set NEXT_PUBLIC_MAP_STYLE_URL to point at a different
+ * permitted style/tile source without a code change. If the style is
+ * unreachable, the component falls back to an inline notice while
+ * Discover's list view keeps working.
  */
-const DEMO_STYLE_URL = "https://demotiles.maplibre.org/style.json";
+const DEMO_STYLE_URL =
+  process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty";
+
+/** Built with DOM APIs (textContent), never HTML strings — activity titles are organizer-authored. */
+function buildPopup(activity: DemoActivity): HTMLElement {
+  const box = document.createElement("div");
+  box.style.color = "#1c1b1a";
+  const title = document.createElement("strong");
+  title.textContent = activity.title;
+  const meta = document.createElement("div");
+  meta.style.fontSize = "12px";
+  meta.textContent = `${activity.areaEn} · ${activity.date} · ${activity.startTime}`;
+  const link = document.createElement("a");
+  link.href = `/discover/${encodeURIComponent(activity.slug)}`;
+  link.textContent = "View activity →";
+  link.style.fontSize = "12px";
+  link.style.fontWeight = "600";
+  link.style.color = "#163c6b";
+  link.style.textDecoration = "underline";
+  box.append(title, meta, link);
+  return box;
+}
 
 export function ActivityMap({
   activities,
   activeSlug,
   onSelect,
+  heightClass = "min-h-[280px]",
+  showLegend = true,
 }: {
   activities: DemoActivity[];
   activeSlug?: string;
   onSelect?: (slug: string) => void;
+  heightClass?: string;
+  showLegend?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -94,28 +144,81 @@ export function ActivityMap({
     activities.forEach((activity) => {
       const el = document.createElement("button");
       el.type = "button";
-      el.setAttribute("aria-label", `${activity.title} — ${activity.areaEn}`);
+      el.setAttribute(
+        "aria-label",
+        `${activity.title} — ${activity.areaEn}, ${CATEGORY_LEGEND.find((c) => c.category === activity.category)?.label ?? activity.category}`
+      );
       const isActive = activity.slug === activeSlug;
-      el.style.width = isActive ? "20px" : "16px";
-      el.style.height = isActive ? "20px" : "16px";
+      const size = isActive ? 32 : 28; // WCAG 2.2 target size: at least 24x24 CSS px
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
       el.style.borderRadius = "999px";
       el.style.border = "2px solid white";
       el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.35)";
       el.style.background = CATEGORY_COLOR[activity.category];
       el.style.cursor = "pointer";
+      el.style.display = "flex";
+      el.style.alignItems = "center";
+      el.style.justifyContent = "center";
+      el.style.padding = "0";
+      el.style.fontSize = "10px";
+      el.style.fontWeight = "700";
+      el.style.color = "white";
+      el.style.lineHeight = "1";
+      el.textContent = CATEGORY_GLYPH[activity.category];
 
       const marker = new Marker({ element: el })
         .setLngLat([activity.lng, activity.lat])
-        .setPopup(
-          new Popup({ offset: 14, closeButton: false }).setHTML(
-            `<strong>${activity.title}</strong><br/><span style="font-size:12px">${activity.areaEn} · ${activity.date}</span>`
-          )
-        )
+        .setPopup(new Popup({ offset: 14, closeButton: false }).setDOMContent(buildPopup(activity)))
         .addTo(map);
 
       el.addEventListener("click", () => onSelect?.(activity.slug));
       markersRef.current.set(activity.slug, marker);
     });
+
+    if (activities.length > 0) {
+      const bounds = new LngLatBounds();
+      activities.forEach((a) => bounds.extend([a.lng, a.lat]));
+      map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
+    }
+
+    // Nearby venues would otherwise overlap (unclickable, and below WCAG 2.2's
+    // 24x24px target size). Push markers apart in pixel space — a purely visual
+    // offset; the coordinates themselves never change. Re-run on every zoom.
+    const relax = () => {
+      const MIN_DISTANCE = 32;
+      const items = [...markersRef.current.values()].map((marker) => {
+        const p = map.project(marker.getLngLat());
+        return { marker, x: p.x, y: p.y, dx: 0, dy: 0 };
+      });
+      for (let iteration = 0; iteration < 30; iteration++) {
+        let moved = false;
+        for (let i = 0; i < items.length; i++) {
+          for (let j = i + 1; j < items.length; j++) {
+            const a = items[i];
+            const b = items[j];
+            const vx = b.x + b.dx - (a.x + a.dx);
+            const vy = b.y + b.dy - (a.y + a.dy);
+            const d = Math.hypot(vx, vy);
+            if (d >= MIN_DISTANCE) continue;
+            const angle = d > 0.5 ? Math.atan2(vy, vx) : ((i - j) * 2.399963) % (2 * Math.PI);
+            const push = (MIN_DISTANCE - d) / 2 + 0.5;
+            a.dx -= Math.cos(angle) * push;
+            a.dy -= Math.sin(angle) * push;
+            b.dx += Math.cos(angle) * push;
+            b.dy += Math.sin(angle) * push;
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      items.forEach((it) => it.marker.setOffset([Math.round(it.dx), Math.round(it.dy)]));
+    };
+    relax();
+    map.on("zoomend", relax);
+    return () => {
+      map.off("zoomend", relax);
+    };
   }, [activities, activeSlug, onSelect, failed]);
 
   if (failed) {
@@ -133,12 +236,35 @@ export function ActivityMap({
     );
   }
 
+  const categoriesShown = new Set(activities.map((a) => a.category));
+
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full min-h-[320px] w-full overflow-hidden rounded-xl border border-border"
-      role="application"
-      aria-label="Map of Prishtina 2036 demo activities. Use the list view for a fully keyboard-accessible alternative."
-    />
+    <div className="flex h-full min-h-[320px] flex-col gap-2">
+      <div
+        ref={containerRef}
+        className={`relative ${heightClass} flex-1 overflow-hidden rounded-2xl border border-border`}
+        role="application"
+        aria-label="Map of Prishtina 2036 demo activities. Use the list view for a fully keyboard-accessible alternative."
+      />
+      {showLegend && categoriesShown.size > 0 && (
+        <ul
+          aria-label="Map marker legend — category and letter code (color is never the only signal)"
+          className="flex flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground-muted"
+        >
+          {CATEGORY_LEGEND.filter((c) => categoriesShown.has(c.category)).map((c) => (
+            <li key={c.category} className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
+                style={{ background: CATEGORY_COLOR[c.category] }}
+              >
+                {CATEGORY_GLYPH[c.category]}
+              </span>
+              {c.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

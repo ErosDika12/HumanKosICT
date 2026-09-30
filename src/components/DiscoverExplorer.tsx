@@ -17,8 +17,14 @@ const ActivityMap = dynamic(
   }
 );
 
-export function DiscoverExplorer({ activities }: { activities: DemoActivity[] }) {
-  const [view, setView] = useState<"list" | "map">("list");
+export function DiscoverExplorer({
+  activities,
+  initialView = "list",
+}: {
+  activities: DemoActivity[];
+  initialView?: "list" | "map";
+}) {
+  const [view, setView] = useState<"list" | "map">(initialView);
   const [activeSlug, setActiveSlug] = useState<string | undefined>(undefined);
 
   return (
@@ -26,13 +32,13 @@ export function DiscoverExplorer({ activities }: { activities: DemoActivity[] })
       <div
         role="tablist"
         aria-label="Discover view"
-        className="inline-flex w-fit gap-1 rounded-lg border border-border bg-surface p-1"
+        className="inline-flex w-fit gap-1 rounded-full border border-border bg-surface p-1"
       >
         <button
           role="tab"
           aria-selected={view === "list"}
           onClick={() => setView("list")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
             view === "list" ? "bg-brand text-white" : "text-foreground-muted hover:bg-surface-muted"
           }`}
         >
@@ -42,7 +48,7 @@ export function DiscoverExplorer({ activities }: { activities: DemoActivity[] })
           role="tab"
           aria-selected={view === "map"}
           onClick={() => setView("map")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
             view === "map" ? "bg-brand text-white" : "text-foreground-muted hover:bg-surface-muted"
           }`}
         >
@@ -59,7 +65,7 @@ export function DiscoverExplorer({ activities }: { activities: DemoActivity[] })
           </p>
         </div>
       ) : view === "list" ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {activities.map((activity) => (
             <ActivityCard key={activity.id} activity={activity} />
           ))}
@@ -74,7 +80,7 @@ export function DiscoverExplorer({ activities }: { activities: DemoActivity[] })
                 onMouseEnter={() => setActiveSlug(activity.slug)}
                 className={activity.slug === activeSlug ? "ring-2 ring-brand rounded-xl" : ""}
               >
-                <ActivityCard activity={activity} />
+                <ActivityCard activity={activity} compact />
               </div>
             ))}
           </div>

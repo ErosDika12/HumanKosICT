@@ -33,8 +33,8 @@ export async function rsvpAction(formData: FormData): Promise<void> {
     redirect(`${path}?rsvpError=${encodeURIComponent(message)}`);
   }
 
-  revalidatePath(path);
-  redirect(path);
+  revalidatePath("/", "layout");
+  redirect(`${path}?rsvped=1`);
 }
 
 export async function cancelRsvpAction(formData: FormData): Promise<void> {
@@ -43,8 +43,8 @@ export async function cancelRsvpAction(formData: FormData): Promise<void> {
   const user = await requireUser();
 
   await cancelRsvp(user.id, activityId);
-  revalidatePath(path);
-  redirect(path);
+  revalidatePath("/", "layout");
+  redirect(`${path}?canceled=1`);
 }
 
 export async function reportActivityAction(formData: FormData): Promise<void> {
@@ -59,6 +59,11 @@ export async function reportActivityAction(formData: FormData): Promise<void> {
     redirect(`/login?next=${encodeURIComponent(path)}`);
   }
 
-  await fileReport(user.id, activityId, reason);
+  try {
+    await fileReport(user.id, activityId, reason);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not file the report.";
+    redirect(`${path}?reportError=${encodeURIComponent(message)}`);
+  }
   redirect(`${path}?reported=1`);
 }

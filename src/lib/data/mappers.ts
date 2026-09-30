@@ -1,6 +1,7 @@
 import "server-only";
 import type {
   ActivityCategory as DbCategory,
+  ActivityStatus as DbActivityStatus,
   AgeEligibility as DbAgeEligibility,
   Cost as DbCost,
   Difficulty as DbDifficulty,
@@ -99,6 +100,7 @@ type ActivityRow = {
   description: string;
   descriptionSq: string;
   organizerId: string;
+  status: DbActivityStatus;
   community: { id: string; slug: string; name: string; verified: boolean };
   interests: { interestId: string }[];
   _confirmedRsvpCount: number;
@@ -134,6 +136,7 @@ export function toDemoActivity(row: ActivityRow): DemoActivity {
     communitySlug: row.community.slug,
     description: row.description,
     descriptionSq: row.descriptionSq,
+    status: row.status === "CANCELED" ? "canceled" : row.status === "DRAFT" ? "draft" : "published",
   };
 }
 

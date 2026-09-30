@@ -1,117 +1,313 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
-import { ACTIVITIES, COMMUNITIES } from "@/lib/demo-data";
+import { ActivityCard } from "@/components/ActivityCard";
+import { MapPreview } from "@/components/MapPreview";
+import { Photo } from "@/components/Photo";
+import { Avatar, ButtonLink, Card, Eyebrow, Pill, SectionHeading, buttonClass } from "@/components/ui";
+import { demoLoginAction } from "@/lib/auth/actions";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { listActivities } from "@/lib/data/activities";
+import { getBridgeShowcase, getFeaturedBridgeId, regenerateBridgeProposals } from "@/lib/data/bridge";
+import { getDemoStats, listFriendPreview } from "@/lib/data/friends";
+import { getPhoto } from "@/lib/photos";
+import { isSimulatedPast, SIMULATED_NOW_LABEL } from "@/lib/simulated-clock";
+import { SLOT_LABEL } from "@/lib/demo-social";
 
-const JOURNEY_STEPS = [
-  {
-    title: "Choose interests",
-    titleSq: "Zgjidh interesat",
-    body: "Tell Human Network what you care about — technology, sport, environment, culture, and more.",
-  },
-  {
-    title: "Discover on the map",
-    titleSq: "Zbulo në hartë",
-    body: "See real seeded activities near you, filter by category, and switch freely between map and list.",
-  },
-  {
-    title: "Join and connect",
-    titleSq: "Bashkohu dhe lidhu",
-    body: "RSVP to an activity, meet its community, and see how BRIDGE proposes useful collaborations.",
-  },
-  {
-    title: "Help the city listen",
-    titleSq: "Ndihmo qytetin të dëgjojë",
-    body: "Community needs feed an anonymous, aggregated municipal view — never individual data.",
-  },
+const FEATURED_SLUGS = ["shetitje-fotografike-qender", "laborator-ideshe-eko-teknologji", "mbjellja-e-pemeve-dardania"];
+
+const STEPS = [
+  { emoji: "🔎", title: "Discover", body: "Filter 18 fictional activities by interest, day, cost and accessibility — on a list or a real map.", href: "/discover", cta: "Browse activities" },
+  { emoji: "🤝", title: "Go with a friend", body: "Meet demo friends who share your interests, see what suits you both, and invite them in one click.", href: "/people", cta: "Find friends" },
+  { emoji: "🗓️", title: "Make a plan", body: "Your RSVPs and invitations become a plan you can review, change and message about.", href: "/plans", cta: "View plans" },
+  { emoji: "🌉", title: "Build together", body: "BRIDGE connects two communities around a real need — from proposal to first joint session.", href: "/bridge", cta: "Explore BRIDGE" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
+  await regenerateBridgeProposals();
+  const featuredId = await getFeaturedBridgeId();
+  const [all, friends, stats, bridge] = await Promise.all([
+    listActivities(),
+    listFriendPreview(4),
+    getDemoStats(),
+    featuredId ? getBridgeShowcase(featuredId, user?.id) : Promise.resolve(null),
+  ]);
+  const upcoming = all.filter((a) => !isSimulatedPast(a.date));
+  const featured = FEATURED_SLUGS.map((s) => upcoming.find((a) => a.slug === s)).filter((a) => a !== undefined);
+  const hero = getPhoto("boulevard");
+  const cta = getPhoto("newborn");
+
   return (
-    <div className="flex flex-1 flex-col">
-      <section className="border-b border-border bg-gradient-to-b from-brand-tint to-background">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-14 sm:px-6 sm:py-20">
-          <DemoBadge className="self-start" />
-          <h1 className="max-w-3xl font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Don&apos;t connect people to screens.
-            <br />
-            <span className="text-brand-strong">Connect people to each other.</span>
-          </h1>
-          <p className="max-w-2xl text-base text-foreground-muted sm:text-lg">
-            KOSOVO 2036 — HUMAN NETWORK is an interactive prototype imagining a Prishtina where a
-            live social map helps people find real activities, form communities, and let{" "}
-            <span className="font-medium text-foreground">BRIDGE</span> propose useful
-            collaborations between them — while the city gets an anonymous, aggregated view of
-            what its neighborhoods need.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center justify-center rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
-            >
-              Start onboarding · Fillo
-            </Link>
-            <Link
-              href="/discover"
-              className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
-            >
-              Skip to Discover
-            </Link>
+    <>
+      {/* HERO */}
+      <section className="relative isolate overflow-hidden bg-[#0e2042] text-white" aria-labelledby="hero-title">
+        <Photo photo={hero} priority sizes="100vw" className="absolute inset-0 -z-10" />
+        <div className="hero-overlay absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="mx-auto flex min-h-[520px] max-w-6xl flex-col justify-center gap-6 px-4 py-16 sm:px-6 sm:py-24">
+          <div className="flex flex-col gap-4">
+            <p className="inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent" />
+              Prishtina · {SIMULATED_NOW_LABEL} · simulated demo
+            </p>
+            <h1 id="hero-title" className="max-w-3xl font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+              Find something to do.
+              <br />
+              Find someone to go with.
+              <br />
+              <span className="text-accent">See your city build together.</span>
+            </h1>
+            <div className="gold-rule w-40" aria-hidden="true" />
+            <p className="max-w-2xl text-base text-white/90 sm:text-lg">
+              Human Network is a prototype of a neighborhood platform for Prishtina in 2036: discover local activities,
+              invite friends, make plans, and watch communities collaborate on real needs through BRIDGE.
+            </p>
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {user ? (
+              <>
+                <ButtonLink href="/discover" variant="accent" size="lg">
+                  Continue to Discover
+                </ButtonLink>
+                <ButtonLink href="/plans" variant="secondary" size="lg" className="border-white/40 bg-white/10 text-white hover:bg-white/20">
+                  View your plans
+                </ButtonLink>
+              </>
+            ) : (
+              <>
+                <form action={demoLoginAction}>
+                  <button type="submit" className={buttonClass("accent", "lg", "shadow-lg")}>
+                    Log in as demo
+                  </button>
+                </form>
+                <ButtonLink href="/discover" variant="secondary" size="lg" className="border-white/40 bg-white/10 text-white hover:bg-white/20">
+                  Browse without logging in
+                </ButtonLink>
+              </>
+            )}
+          </div>
+          {!user && (
+            <p className="max-w-xl text-sm text-white/80">
+              One click, no password, no email. You get your own temporary demo account — what you do stays on it and is
+              removed after a day.
+            </p>
+          )}
+          <dl className="mt-2 grid max-w-2xl grid-cols-3 gap-3 text-center">
+            {[
+              [stats.activities, "fictional activities"],
+              [stats.friends, "demo friends"],
+              [stats.communities, "communities"],
+            ].map(([n, label]) => (
+              <div key={String(label)} className="rounded-2xl bg-white/10 px-3 py-3 backdrop-blur">
+                <dt className="text-xs text-white/80">{label}</dt>
+                <dd className="font-display text-3xl font-semibold text-white">{n}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-        <h2 className="font-display text-2xl font-semibold text-foreground">The core journey</h2>
-        <p className="mt-1 max-w-2xl text-sm text-foreground-muted">
-          This prototype currently implements Phase 1 of an eight-phase build: onboarding, map
-          and list discovery, and activity detail. Later phases add accounts, RSVP, BRIDGE, the AI
-          assistant, and the municipal dashboard.
+        <p className="absolute bottom-2 right-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white">
+          Photo: {hero.author}, {hero.license}
         </p>
-        <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {JOURNEY_STEPS.map((step, i) => (
-            <li
-              key={step.title}
-              className="rounded-xl border border-border bg-surface p-5 shadow-sm"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-tint text-sm font-semibold text-brand-strong">
-                {i + 1}
-              </span>
-              <h3 className="mt-3 font-display text-base font-semibold text-foreground">
-                {step.title}
-              </h3>
-              <p className="mt-1 text-xs uppercase tracking-wide text-foreground-muted">
-                {step.titleSq}
-              </p>
-              <p className="mt-2 text-sm text-foreground-muted">{step.body}</p>
-            </li>
-          ))}
-        </ol>
       </section>
 
-      <section className="border-t border-border bg-surface-muted">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-12 sm:grid-cols-2 sm:px-6">
-          <div className="rounded-xl border border-border bg-surface p-6">
-            <p className="text-sm font-medium text-foreground-muted">Seeded this demo</p>
-            <p className="mt-2 font-display text-3xl font-semibold text-foreground">
-              {ACTIVITIES.length} activities
-            </p>
-            <p className="mt-1 text-sm text-foreground-muted">
-              across sports, technology, culture, and environment — all fictional and dated for
-              2036.
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-20 px-4 py-16 sm:px-6">
+        {/* HOW IT WORKS */}
+        <section aria-labelledby="how-title" className="flex flex-col gap-6">
+          <SectionHeading
+            eyebrow="How it works"
+            title="From “what’s on?” to “see you there”"
+            description="Four steps, one connected system — everything below is clickable and stored."
+          />
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s, i) => (
+              <li key={s.title}>
+                <Card className="flex h-full flex-col gap-3 p-5">
+                  <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-tint text-2xl">
+                    {s.emoji}
+                  </span>
+                  <h3 className="font-display text-lg font-semibold text-foreground">
+                    <span className="mr-1.5 text-accent-strong">{i + 1}.</span>
+                    {s.title}
+                  </h3>
+                  <p className="text-sm text-foreground-muted">{s.body}</p>
+                  <Link href={s.href} className="mt-auto text-sm font-semibold text-brand-strong hover:underline">
+                    {s.cta} →
+                  </Link>
+                </Card>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* FEATURED ACTIVITIES */}
+        <section aria-labelledby="featured-title" className="flex flex-col gap-6">
+          <SectionHeading
+            eyebrow="This week in Prishtina (simulated)"
+            title="Featured activities"
+            description="Fictional events with real, stored details — RSVPs persist on your demo account."
+            action={
+              <ButtonLink href="/discover" variant="secondary" size="sm">
+                See all {stats.activities} activities
+              </ButtonLink>
+            }
+          />
+          <div className="grid gap-5 md:grid-cols-3">
+            {featured.map((a) => (
+              <ActivityCard key={a.id} activity={a} />
+            ))}
+          </div>
+        </section>
+
+        {/* MAP */}
+        <section aria-labelledby="map-title" className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="flex flex-col gap-4">
+            <SectionHeading
+              eyebrow="The map"
+              title="Everything is somewhere real"
+              description="Venues are placed in real Prishtina neighborhoods — Qendër, Dardania, Sunny Hill, Lakrishtë, Ulpiana and Gërmia. Pick a marker to open the activity."
+            />
+            <ul className="flex flex-wrap gap-2 text-sm">
+              {["Qendër", "Dardania", "Sunny Hill", "Lakrishtë", "Ulpiana", "Gërmia"].map((n) => (
+                <li key={n}>
+                  <Pill tone="brand">{n}</Pill>
+                </li>
+              ))}
+            </ul>
+            <ButtonLink href="/discover?view=map" variant="primary" className="w-fit">
+              Open the full map
+            </ButtonLink>
+          </div>
+          <MapPreview activities={upcoming} />
+        </section>
+
+        {/* FRIENDS */}
+        <section aria-labelledby="friends-title" className="flex flex-col gap-6">
+          <SectionHeading
+            eyebrow="Demo friends"
+            title="Meet people who like what you like"
+            description="Twelve fictional demo friends with different interests, neighborhoods and availability. They are not real and never reply live — see how each one fits your plans."
+            action={
+              <ButtonLink href="/people" variant="secondary" size="sm">
+                Find friends
+              </ButtonLink>
+            }
+          />
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {friends.map((f) => (
+              <li key={f.id}>
+                <Card className="flex h-full flex-col gap-3 p-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={f.name} />
+                    <div>
+                      <p className="font-display font-semibold text-foreground">{f.name}</p>
+                      <p className="text-xs text-foreground-muted">{f.areaSq?.replace("Prishtinë — ", "")}</p>
+                    </div>
+                  </div>
+                  <ul className="flex flex-wrap gap-1.5" aria-label={`${f.name}'s interests`}>
+                    {f.interests.slice(0, 3).map((i) => (
+                      <li key={i.id}>
+                        <Pill tone="neutral">
+                          {i.emoji} {i.label}
+                        </Pill>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-foreground-muted">Free {f.availability.map((s) => SLOT_LABEL[s]).join(", ")}</p>
+                  <Pill tone="accent" className="w-fit">
+                    Demo friend · fictional
+                  </Pill>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* BRIDGE */}
+        {bridge && (
+          <section aria-labelledby="bridge-title" className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+            <div className="grid lg:grid-cols-[1.05fr_1fr]">
+              <div className="flex flex-col gap-5 p-6 sm:p-8">
+                <Eyebrow>BRIDGE · a real example</Eyebrow>
+                <h2 id="bridge-title" className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                  How two communities solve one neighborhood need
+                </h2>
+                <p className="text-foreground-muted">
+                  Neighbors in {bridge.need.areaSq.replace("Prishtinë — ", "")} asked for help: &ldquo;{bridge.need.description}&rdquo;
+                  BRIDGE matched <strong>{bridge.communityA.name}</strong> with <strong>{bridge.communityB.name}</strong>. Their
+                  organizers accepted, a project opened, and the first joint session is scheduled.
+                </p>
+                <ol className="flex flex-col gap-2" aria-label="BRIDGE progress">
+                  {bridge.stages.map((s, i) => (
+                    <li key={s.key} className="flex items-start gap-3">
+                      <span
+                        aria-hidden="true"
+                        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                          s.state === "done" ? "bg-success text-white" : s.state === "current" ? "bg-accent text-[#1c1b1a]" : "border border-border bg-surface-muted text-foreground-muted"
+                        }`}
+                      >
+                        {s.state === "done" ? "✓" : i + 1}
+                      </span>
+                      <span className="text-sm">
+                        <span className="font-semibold text-foreground">{s.label}</span>
+                        <span className="text-foreground-muted"> — {s.detail}</span>
+                        {s.state === "current" && <span className="sr-only"> (current step)</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <div className="flex flex-wrap gap-3">
+                  <ButtonLink href="/bridge" variant="primary" size="md">
+                    Explore BRIDGE
+                  </ButtonLink>
+                  <ButtonLink href={bridge.nextStep.href} variant="secondary" size="md">
+                    {bridge.nextStep.label}
+                  </ButtonLink>
+                </div>
+              </div>
+              <Photo photo={getPhoto("germia")} small={false} illustrative className="relative min-h-[260px] bg-surface-muted" />
+            </div>
+          </section>
+        )}
+
+        {/* HONESTY */}
+        <section aria-labelledby="honest-title" className="grid gap-6 rounded-3xl bg-brand-tint p-6 sm:p-8 lg:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Eyebrow>Honest by design</Eyebrow>
+            <h2 id="honest-title" className="font-display text-2xl font-semibold text-foreground">
+              What is real, what is simulated
+            </h2>
+            <p className="text-sm text-foreground-muted">
+              This is a competition prototype. It never pretends to be more than it is.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface p-6">
-            <p className="text-sm font-medium text-foreground-muted">And</p>
-            <p className="mt-2 font-display text-3xl font-semibold text-foreground">
-              {COMMUNITIES.length} communities
-            </p>
-            <p className="mt-1 text-sm text-foreground-muted">
-              organizing them — the same demo communities that later phases connect through
-              BRIDGE.
-            </p>
+          <ul className="grid gap-2 text-sm text-foreground">
+            <li>✅ <strong>Real:</strong> the software, the database, your RSVPs, invitations and messages (on your temporary account).</li>
+            <li>🎭 <strong>Simulated:</strong> every person, community, event and number in Prishtina 2036 — labeled as demo content.</li>
+            <li>🕒 <strong>Simulated clock:</strong> “today” is {SIMULATED_NOW_LABEL}, not the real date.</li>
+            <li>🖼️ <strong>Photos:</strong> real licensed photographs used only as illustrations — <Link href="/credits" className="underline">credits</Link>.</li>
+            <li>💬 <strong>Friends never reply live.</strong> Replies are labeled examples or a visible availability rule.</li>
+          </ul>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="relative isolate overflow-hidden rounded-3xl bg-[#0e2042] p-8 text-white sm:p-12">
+          <Photo photo={cta} small={false} className="absolute inset-0 -z-10 opacity-40" />
+          <div className="hero-overlay absolute inset-0 -z-10" aria-hidden="true" />
+          <div className="flex max-w-xl flex-col gap-4">
+            <h2 className="font-display text-3xl font-semibold sm:text-4xl">Ready to plan something?</h2>
+            <p className="text-white/90">Take the whole journey in about three minutes — no sign-up.</p>
+            {user ? (
+              <ButtonLink href="/discover" variant="accent" size="lg" className="w-fit">
+                Continue to Discover
+              </ButtonLink>
+            ) : (
+              <form action={demoLoginAction}>
+                <button type="submit" className={buttonClass("accent", "lg")}>
+                  Log in as demo
+                </button>
+              </form>
+            )}
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+    </>
   );
 }

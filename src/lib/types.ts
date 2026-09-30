@@ -71,6 +71,26 @@ export interface DemoActivity {
   communitySlug: string;
   description: string;
   descriptionSq: string;
+  /**
+   * "published" for every Phase 1 seed row. "draft" is a real Phase 4 state
+   * for an organizer-created activity awaiting moderator publish (never
+   * shown in listActivities()'s discovery results, but visible via direct
+   * link to its organizer/a moderator). "canceled" is a real Phase 2 schema
+   * state, settable by an organizer as of Phase 4
+   * (src/lib/data/organizer-activities.ts). Optional (defaults to
+   * "published" at call sites) so src/lib/demo-data.ts's literal seed
+   * content doesn't need to restate it on every entry.
+   */
+  status?: "draft" | "published" | "canceled";
+  /**
+   * Phase 3 recommendation output, attached by src/lib/data/recommendations.ts
+   * when the caller asked for scoring — never persisted, never present on a
+   * raw getActivityBySlug() result. Optional so every Phase 1/2 component
+   * that renders a DemoActivity without knowing about recommendations keeps
+   * working unchanged.
+   */
+  matchReasons?: string[];
+  distanceKm?: number;
 }
 
 export interface DemoCommunity {

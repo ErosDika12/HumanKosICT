@@ -6,7 +6,7 @@ import { SESSION_COOKIE, verifySessionToken } from "./session";
 
 export type CurrentUser = Pick<
   User,
-  "id" | "email" | "name" | "nameSq" | "role" | "isDemoPersona"
+  "id" | "email" | "name" | "nameSq" | "role" | "isDemoPersona" | "isDiscoverable" | "isDemoVisitor"
 >;
 
 /**
@@ -24,7 +24,16 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { id: true, email: true, name: true, nameSq: true, role: true, isDemoPersona: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      nameSq: true,
+      role: true,
+      isDemoPersona: true,
+      isDiscoverable: true,
+      isDemoVisitor: true,
+    },
   });
   return user;
 }

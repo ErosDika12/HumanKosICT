@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { User } from "@prisma/client";
+import { assertBoundedText, MAX_LONG_TEXT } from "@/lib/validation";
 
 /**
  * Explicit public/private projections (Phase 2 mission: "define clear
@@ -73,6 +74,8 @@ export async function updateOwnProfile(
   if (actorId !== targetUserId) {
     throw new ProfileAuthorizationError("You can only edit your own profile.");
   }
+  if (input.bio !== undefined) assertBoundedText(input.bio, MAX_LONG_TEXT, "Bio");
+  if (input.bioSq !== undefined) assertBoundedText(input.bioSq, MAX_LONG_TEXT, "Bio (Albanian)");
   const user = await prisma.user.update({
     where: { id: targetUserId },
     data: input,

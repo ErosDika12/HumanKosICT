@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     // see scripts/copy-maplibre-worker.mjs.
     "public/maplibre-gl-worker.mjs",
     "public/maplibre-gl-shared.mjs",
+    // Generated Prisma client (PostgreSQL) — see prisma/schema.production.prisma.
+    "src/generated/**",
   ]),
 ]);
 

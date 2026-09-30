@@ -3,6 +3,9 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { unreadNotificationCount } from "@/lib/data/notifications";
+import { unreadMessageCount } from "@/lib/data/messages";
+import { countPendingInvitesForViewer } from "@/lib/data/invites";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,14 +25,21 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "KOSOVO 2036 — Human Network",
+  title: "Human Network — Prishtina 2036 (demo)",
   description:
-    "An interactive Prishtina 2036 prototype for discovering activities, forming communities, and connecting neighborhoods through BRIDGE. Simulated demo data only.",
+    "Find something to do in Prishtina, invite a friend, make a plan, and watch communities collaborate through BRIDGE. A fictional 2036 demo — all people and events are simulated.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getCurrentUser();
   const devMode = process.env.NODE_ENV !== "production";
+  const [unreadCount, unreadMessages, pendingInvites] = user
+    ? await Promise.all([
+        unreadNotificationCount(user.id),
+        unreadMessageCount(user.id),
+        countPendingInvitesForViewer(user.id),
+      ])
+    : [0, 0, 0];
 
   return (
     <html
@@ -43,7 +53,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to main content
         </a>
-        <SiteHeader user={user ? { name: user.name, role: user.role } : null} devMode={devMode} />
+        <SiteHeader
+          user={user ? { name: user.name, role: user.role, isDemoVisitor: user.isDemoVisitor } : null}
+          devMode={devMode}
+          unreadCount={unreadCount}
+          unreadMessages={unreadMessages}
+          pendingInvites={pendingInvites}
+        />
         <main id="main-content" className="flex flex-1 flex-col">
           {children}
         </main>

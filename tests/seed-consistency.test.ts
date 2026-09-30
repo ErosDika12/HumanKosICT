@@ -20,13 +20,20 @@ const EXPECTED_COMMUNITY_SLUGS = [
   "kolektivi-kulturor-prizreni-i-vjeter",
 ].sort();
 
-describe("seed consistency", () => {
-  it("seeds exactly the Phase 1 activities and communities, by slug", async () => {
-    const activities = await prisma.activity.findMany({ select: { slug: true } });
-    const communities = await prisma.community.findMany({ select: { slug: true } });
+// Phase 9 expanded the demo to 18 activities and 7 communities; the Phase 1
+// slugs above must keep resolving.
+const TOTAL_ACTIVITIES = 18;
+const TOTAL_COMMUNITIES = 7;
 
-    assert.deepEqual(activities.map((a) => a.slug).sort(), EXPECTED_ACTIVITY_SLUGS);
-    assert.deepEqual(communities.map((c) => c.slug).sort(), EXPECTED_COMMUNITY_SLUGS);
+describe("seed consistency", () => {
+  it("still seeds every Phase 1 activity and community by slug, plus the Phase 9 additions", async () => {
+    const activities = (await prisma.activity.findMany({ select: { slug: true } })).map((a) => a.slug);
+    const communities = (await prisma.community.findMany({ select: { slug: true } })).map((c) => c.slug);
+
+    for (const slug of EXPECTED_ACTIVITY_SLUGS) assert.ok(activities.includes(slug), `missing activity ${slug}`);
+    for (const slug of EXPECTED_COMMUNITY_SLUGS) assert.ok(communities.includes(slug), `missing community ${slug}`);
+    assert.equal(activities.length, TOTAL_ACTIVITIES);
+    assert.equal(communities.length, TOTAL_COMMUNITIES);
   });
 
   it("seeds all 15 fixed-catalog interests", async () => {
@@ -52,7 +59,7 @@ describe("seed consistency", () => {
 
     const activities = await prisma.activity.findMany();
     const communities = await prisma.community.findMany();
-    assert.equal(activities.length, EXPECTED_ACTIVITY_SLUGS.length);
-    assert.equal(communities.length, EXPECTED_COMMUNITY_SLUGS.length);
+    assert.equal(activities.length, TOTAL_ACTIVITIES);
+    assert.equal(communities.length, TOTAL_COMMUNITIES);
   });
 });

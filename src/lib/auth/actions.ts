@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "./password";
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { assertNotProduction } from "./dev-guard";
+import { createDemoVisitor, DemoLoginUnavailableError } from "@/lib/data/demo-session";
 
 async function setSessionCookie(userId: string, role: import("@prisma/client").Role) {
   const token = await createSessionToken({ sub: userId, role });
@@ -63,4 +64,23 @@ export async function devLoginAction(formData: FormData): Promise<void> {
 
   await setSessionCookie(user.id, user.role);
   redirect("/discover");
+}
+
+/**
+ * Public one-click "Log in as demo": creates an isolated, ordinary MEMBER
+ * account (see src/lib/data/demo-session.ts). Never signs anyone in as an
+ * organizer, moderator or analyst, and never needs a password.
+ */
+export async function demoLoginAction(): Promise<void> {
+  let visitor: { id: string; role: "MEMBER" };
+  try {
+    visitor = await createDemoVisitor();
+  } catch (err) {
+    if (err instanceof DemoLoginUnavailableError) {
+      redirect(`/login?error=${encodeURIComponent(err.message)}`);
+    }
+    throw err;
+  }
+  await setSessionCookie(visitor.id, visitor.role);
+  redirect("/discover?welcome=1");
 }

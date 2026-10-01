@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { PHOTO_DISCLAIMER, type Photo as PhotoData } from "@/lib/photos";
+import { useI18n } from "@/components/LocaleProvider";
 
 /**
  * A responsive, already-optimized photo (1280px / 640px JPEGs in
@@ -26,6 +29,7 @@ export function Photo({
   className?: string;
   imgClassName?: string;
 }) {
+  const { t } = useI18n();
   return (
     <figure className={`overflow-hidden ${className}`}>
       <Image
@@ -39,7 +43,7 @@ export function Photo({
       />
       {illustrative && (
         <figcaption className="absolute bottom-2 left-2 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
-          Illustrative photo · fictional event
+          {t("fact.illustrative")}
         </figcaption>
       )}
       {credit && (

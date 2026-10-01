@@ -1,5 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { addDaysIso } from "@/lib/time-window";
 
 /**
  * Simple in-app inbox — no external messaging dependency (Phase 4 brief).
@@ -63,4 +65,34 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
     where: { userId, readAt: null },
     data: { readAt: new Date() },
   });
+}
+
+export interface ReminderItem {
+  slug: string;
+  title: string;
+  titleSq: string;
+  date: string;
+  startTime: string;
+  venueName: string;
+}
+
+/**
+ * In-app reminders for plans that are coming up within the next week of the
+ * SIMULATED calendar. Derived from the visitor's confirmed RSVPs at read time —
+ * there is no background scheduler, so a reminder can never be late, duplicated
+ * or sent for an RSVP that was canceled.
+ */
+export async function listReminders(userId: string, withinDays = 6): Promise<ReminderItem[]> {
+  const to = addDaysIso(SIMULATED_NOW_ISO, withinDays);
+  const rows = await prisma.rsvp.findMany({
+    where: {
+      userId,
+      status: "CONFIRMED",
+      activity: { status: "PUBLISHED", date: { gte: SIMULATED_NOW_ISO, lte: to } },
+    },
+    select: { activity: { select: { slug: true, title: true, titleSq: true, date: true, startTime: true, venueName: true } } },
+  });
+  return rows
+    .map((r) => r.activity)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 }

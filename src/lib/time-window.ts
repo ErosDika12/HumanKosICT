@@ -77,6 +77,12 @@ export function matchesWindow(isoDate: string, when: TimeWindow, todayIso: strin
   return isoDate >= range.from && isoDate <= range.to;
 }
 
+export const WINDOW_LABEL: Record<"sq" | "en" | "sr", Record<TimeWindow, string>> = {
+  en: { week: "this week", weekend: "this weekend", "next-weekend": "next weekend", weekday: "on a weekday" },
+  sq: { week: "këtë javë", weekend: "këtë fundjavë", "next-weekend": "fundjavën tjetër", weekday: "në ditë pune" },
+  sr: { week: "ove nedelje", weekend: "ovog vikenda", "next-weekend": "sledećeg vikenda", weekday: "radnim danima" },
+};
+
 export const WINDOW_LABEL_EN: Record<TimeWindow, string> = {
   week: "this week",
   weekend: "this weekend",

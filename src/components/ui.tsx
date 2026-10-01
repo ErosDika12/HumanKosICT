@@ -20,7 +20,7 @@ const SIZE: Record<Size, string> = {
 };
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", extra = ""): string {
-  return `inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors ${VARIANT[variant]} ${SIZE[size]} ${extra}`;
+  return `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors ${VARIANT[variant]} ${SIZE[size]} ${extra}`;
 }
 
 export function ButtonLink({

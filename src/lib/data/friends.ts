@@ -224,7 +224,7 @@ export async function suitableActivities(viewerId: string, friendId: string, lim
 }
 
 /** Public preview for the homepage: a few demo friends and their interests (no private fields exist here). */
-export async function listFriendPreview(limit = 4): Promise<Pick<FriendCard, "id" | "name" | "areaSq" | "interests" | "availability">[]> {
+export async function listFriendPreview(limit = 4, spread = true): Promise<Pick<FriendCard, "id" | "name" | "areaSq" | "interests" | "availability">[]> {
   const users = await prisma.user.findMany({
     where: { isDemoFriend: true, isDiscoverable: true, role: "MEMBER" },
     select: FRIEND_SELECT,
@@ -233,6 +233,7 @@ export async function listFriendPreview(limit = 4): Promise<Pick<FriendCard, "id
   // A varied handful: spread across neighborhoods rather than alphabetically adjacent.
   const seen = new Set<string>();
   const picked = users.filter((u) => {
+    if (!spread) return true;
     const key = u.areaSq ?? "";
     if (seen.has(key)) return false;
     seen.add(key);

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
 import {
@@ -19,7 +20,7 @@ export async function requestConnectionAction(formData: FormData): Promise<void>
     await requestConnection(user.id, targetId, reason);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not send request.";
-    redirect(`/people?error=${encodeURIComponent(message)}`);
+    redirect(`/people?error=${errorParam(message)}`);
   }
   revalidatePath("/people");
   redirect("/people?requested=1");
@@ -60,7 +61,7 @@ export async function reportUserAction(formData: FormData): Promise<void> {
     await reportUser(user.id, targetId, reason);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not file the report.";
-    redirect(`${base}?error=${encodeURIComponent(message)}`);
+    redirect(`${base}?error=${errorParam(message)}`);
   }
   redirect(`${base}?reported=1`);
 }

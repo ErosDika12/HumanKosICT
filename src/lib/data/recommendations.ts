@@ -24,8 +24,8 @@
  * a fabricated ranking.
  */
 import type { DemoActivity, InterestId } from "@/lib/types";
-import { getInterest } from "@/lib/types";
-import { matchesWindow, WINDOW_LABEL_EN, type TimeWindow } from "@/lib/time-window";
+import { getInterest, interestLabel } from "@/lib/types";
+import { matchesWindow, WINDOW_LABEL, type TimeWindow } from "@/lib/time-window";
 
 export type DayBucket = "weekday" | "weekend";
 
@@ -52,7 +52,17 @@ export function haversineKm(a: GeoPoint, b: GeoPoint): number {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+type ReasonLocale = "sq" | "en" | "sr";
+
+const REASON_TEXT: Record<ReasonLocale, { interest: (labels: string) => string; and: string; when: (window: string) => string }> = {
+  en: { interest: (l) => `Matches your interest in ${l}`, and: " and ", when: (w) => `Happening ${w}` },
+  sq: { interest: (l) => `Përputhet me interesin tënd për ${l}`, and: " dhe ", when: (w) => `Zhvillohet ${w}` },
+  sr: { interest: (l) => `Odgovara vašem interesovanju za ${l}`, and: " i ", when: (w) => `Održava se ${w}` },
+};
+
 export interface RecommendationContext {
+  /** Language of the human-readable match reasons (default English). */
+  locale?: ReasonLocale;
   interestIds?: InterestId[];
   /** A date window resolved on the simulated clock (see src/lib/time-window.ts). */
   when?: TimeWindow;
@@ -68,6 +78,7 @@ export function scoreActivities(
   ctx: RecommendationContext
 ): ScoredActivity[] {
   const interestIds = ctx.interestIds ?? [];
+  const locale = ctx.locale ?? "en";
 
   const scored = activities.map((activity): ScoredActivity => {
     const reasons: string[] = [];
@@ -76,15 +87,13 @@ export function scoreActivities(
     const matchedInterests = activity.interestTags.filter((tag) => interestIds.includes(tag));
     if (matchedInterests.length > 0) {
       score += matchedInterests.length * 2;
-      const labels = matchedInterests.map((id) => getInterest(id).labelEn);
-      reasons.push(
-        `Matches your interest in ${labels.join(" and ")}`
-      );
+      const labels = matchedInterests.map((id) => interestLabel(getInterest(id), locale));
+      reasons.push(REASON_TEXT[locale].interest(labels.join(REASON_TEXT[locale].and)));
     }
 
     if (ctx.when && matchesWindow(activity.date, ctx.when)) {
       score += 1;
-      reasons.push(`Happening ${WINDOW_LABEL_EN[ctx.when]}`);
+      reasons.push(REASON_TEXT[locale].when(WINDOW_LABEL[locale][ctx.when]));
     }
 
     // Distance itself is rendered as a structured field (ActivityCard's

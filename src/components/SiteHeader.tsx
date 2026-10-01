@@ -2,17 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { demoLoginAction, logoutAction } from "@/lib/auth/actions";
 import { buttonClass } from "@/components/ui";
+import { useI18n } from "@/components/LocaleProvider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  BellIcon,
+  BridgeIcon,
+  CalendarIcon,
+  ChatIcon,
+  CloseIcon,
+  CommunityIcon,
+  CompassIcon,
+  MenuIcon,
+  SparkIcon,
+  UserIcon,
+  UsersIcon,
+} from "@/components/icons";
 
-const NAV_LINKS = [
-  { href: "/discover", label: "Discover" },
-  { href: "/people", label: "Friends" },
-  { href: "/plans", label: "Plans" },
-  { href: "/communities", label: "Communities" },
-  { href: "/bridge", label: "BRIDGE" },
-  { href: "/assistant", label: "Assistant" },
+type IconType = ComponentType<{ size?: number; className?: string }>;
+
+/** The ordinary visitor journey: five destinations, nothing else. */
+const CORE_LINKS: { href: string; labelKey: string; Icon: IconType }[] = [
+  { href: "/discover", labelKey: "nav.discover", Icon: CompassIcon },
+  { href: "/people", labelKey: "nav.friends", Icon: UsersIcon },
+  { href: "/plans", labelKey: "nav.plans", Icon: CalendarIcon },
+  { href: "/communities", labelKey: "nav.communities", Icon: CommunityIcon },
+  { href: "/bridge", labelKey: "nav.bridge", Icon: BridgeIcon },
 ];
 
 export interface SiteHeaderUser {
@@ -21,21 +38,26 @@ export interface SiteHeaderUser {
   isDemoVisitor: boolean;
 }
 
-function Badge({ count }: { count: number }) {
+function Badge({ count, label }: { count: number; label: string }) {
   if (count <= 0) return null;
   return (
-    <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
-      <span className="sr-only">{count} unread </span>
+    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+      <span className="sr-only">{label} </span>
       {count}
     </span>
   );
 }
 
-function DemoLoginButton({ size = "sm", className = "" }: { size?: "sm" | "md"; className?: string }) {
+function isActive(pathname: string | null, href: string) {
+  return pathname === href || Boolean(pathname?.startsWith(href + "/"));
+}
+
+function DemoLoginButton({ className = "" }: { className?: string }) {
+  const { t } = useI18n();
   return (
     <form action={demoLoginAction}>
-      <button type="submit" className={buttonClass("accent", size, className)}>
-        Log in as demo
+      <button type="submit" className={buttonClass("accent", "sm", className)}>
+        {t("action.demoLogin")}
       </button>
     </form>
   );
@@ -47,162 +69,247 @@ export function SiteHeader({
   unreadCount = 0,
   unreadMessages = 0,
   pendingInvites = 0,
+  upcomingPlans = 0,
 }: {
   user: SiteHeaderUser | null;
   devMode: boolean;
   unreadCount?: number;
   unreadMessages?: number;
   pendingInvites?: number;
+  upcomingPlans?: number;
 }) {
+  const { t } = useI18n();
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Close menus after navigating and on Escape.
+  useEffect(() => {
+    const close = () => {
+      setMenuOpen(false);
+      setUserOpen(false);
+    };
+    const id = window.requestAnimationFrame(close);
+    return () => window.cancelAnimationFrame(id);
+  }, [pathname]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setUserOpen(false);
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("click", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onClick);
+    };
+  }, []);
+
+  const planBadge = pendingInvites + upcomingPlans;
+  const isStaff = Boolean(user && !user.isDemoVisitor && user.role !== "MEMBER");
+  const showModeration = user?.role === "MODERATOR";
+  const showMunicipality = user?.role === "MUNICIPALITY_ANALYST";
   const roleLabel = user && !user.isDemoVisitor ? user.role.replace(/_/g, " ").toLowerCase() : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-foreground">
-          <span
-            aria-hidden="true"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm"
-          >
-            HN
-          </span>
-          <span className="leading-tight">
-            Human Network
-            <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-accent-strong">
-              Prishtina 2036 · demo
+    <>
+      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-foreground">
+            <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm">
+              HN
             </span>
-          </span>
-        </Link>
+            <span className="leading-tight">
+              {t("brand.name")}
+              <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-accent-strong">{t("brand.tagline")}</span>
+            </span>
+          </Link>
 
-        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Main">
-          {NAV_LINKS.map((link) => {
-            const active = pathname === link.href || pathname?.startsWith(link.href + "/");
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={active ? "page" : undefined}
-                className={`relative rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-brand-tint text-brand-strong"
-                    : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
-                }`}
-              >
-                {link.label}
-                {link.href === "/plans" && <Badge count={pendingInvites} />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="hidden items-center gap-1.5 lg:flex">
-          {user ? (
-            <>
-              <Link
-                href="/messages"
-                className="relative rounded-full px-3 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-foreground"
-              >
-                Messages
-                <Badge count={unreadMessages} />
-              </Link>
-              <Link
-                href="/inbox"
-                className="relative rounded-full px-3 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-foreground"
-              >
-                Inbox
-                <Badge count={unreadCount} />
-              </Link>
-              <span className="ml-1 max-w-[11rem] truncate text-sm text-foreground-muted" title={user.name}>
-                {user.name}
-                {user.isDemoVisitor && <span className="ml-1 text-xs">(demo)</span>}
-                {roleLabel && <span className="ml-1 text-xs">({roleLabel})</span>}
-              </span>
-              <form action={logoutAction}>
-                <button type="submit" className={buttonClass("secondary", "sm")}>
-                  Sign out
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className={buttonClass("ghost", "sm")}>
-                Staff sign in
-              </Link>
-              {devMode && (
-                <Link href="/dev-login" className="px-2 text-xs font-medium text-foreground-muted underline underline-offset-2">
-                  Dev personas
+          <nav className="hidden items-center gap-0.5 lg:flex" aria-label={t("shell.mainNav")}>
+            {CORE_LINKS.map(({ href, labelKey }) => {
+              const active = isActive(pathname, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+                    active ? "bg-brand-tint text-brand-strong" : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+                  }`}
+                >
+                  {t(labelKey)}
+                  {href === "/plans" && <Badge count={planBadge} label={t("nav.plans")} />}
                 </Link>
-              )}
-              <DemoLoginButton />
-            </>
-          )}
-        </div>
+              );
+            })}
+          </nav>
 
-        <div className="flex items-center gap-2 lg:hidden">
-          {!user && <DemoLoginButton />}
-          <button
-            type="button"
-            className="relative inline-flex items-center justify-center rounded-full border border-border p-2 text-foreground"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              {open ? (
-                <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              ) : (
-                <path d="M2.5 5h15M2.5 10h15M2.5 15h15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              )}
-            </svg>
-            {!open && <Badge count={unreadMessages + unreadCount + pendingInvites} />}
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <nav id="mobile-nav" aria-label="Main mobile" className="border-t border-border lg:hidden">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-base font-medium text-foreground hover:bg-surface-muted"
-              >
-                {link.label}
-                {link.href === "/plans" && pendingInvites > 0 && (
-                  <span className="rounded-full bg-danger px-2 text-xs font-bold text-white">{pendingInvites}</span>
-                )}
-              </Link>
-            ))}
+          <div className="hidden items-center gap-2 lg:flex">
+            <Link
+              href="/assistant"
+              aria-current={isActive(pathname, "/assistant") ? "page" : undefined}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+            >
+              <SparkIcon size={16} />
+              {t("nav.assistant")}
+            </Link>
+            <LanguageSwitcher />
             {user ? (
               <>
-                <Link href="/messages" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-base font-medium text-foreground hover:bg-surface-muted">
-                  Messages {unreadMessages > 0 && `(${unreadMessages})`}
+                <Link href="/messages" className="relative rounded-full p-2 text-foreground-muted hover:bg-surface-muted hover:text-foreground" title={t("nav.messages")}>
+                  <ChatIcon />
+                  <span className="sr-only">{t("nav.messages")}</span>
+                  <Badge count={unreadMessages} label={t("shell.unread", { n: unreadMessages })} />
                 </Link>
-                <Link href="/inbox" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-base font-medium text-foreground hover:bg-surface-muted">
-                  Inbox {unreadCount > 0 && `(${unreadCount})`}
+                <Link href="/inbox" className="relative rounded-full p-2 text-foreground-muted hover:bg-surface-muted hover:text-foreground" title={t("nav.inbox")}>
+                  <BellIcon />
+                  <span className="sr-only">{t("nav.inbox")}</span>
+                  <Badge count={unreadCount} label={t("shell.unread", { n: unreadCount })} />
                 </Link>
-                <Link href="/impact" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-base font-medium text-foreground hover:bg-surface-muted">
-                  My impact
-                </Link>
-                <form action={logoutAction}>
-                  <button type="submit" className="w-full rounded-xl px-3 py-2.5 text-left text-base font-medium text-foreground hover:bg-surface-muted">
-                    Sign out ({user.name})
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    type="button"
+                    aria-expanded={userOpen}
+                    onClick={() => setUserOpen((v) => !v)}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:bg-surface-muted"
+                  >
+                    <UserIcon size={16} />
+                    <span className="max-w-[9rem] truncate">{user.name}</span>
                   </button>
-                </form>
+                  {userOpen && (
+                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-border bg-surface p-2 shadow-lg">
+                      <p className="px-3 py-2 text-xs text-foreground-muted">
+                        {user.isDemoVisitor ? `${t("nav.demoLabel")} · ${t("state.fictional")}` : roleLabel}
+                      </p>
+                      <MenuLink href="/impact" onNavigate={() => setUserOpen(false)}>{t("nav.progress")}</MenuLink>
+                      <MenuLink href="/needs" onNavigate={() => setUserOpen(false)}>{t("nav.needs")}</MenuLink>
+                      {isStaff && (
+                        <>
+                          <p className="mt-1 px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted">{t("nav.staff")}</p>
+                          {showModeration && <MenuLink href="/moderation" onNavigate={() => setUserOpen(false)}>{t("nav.moderation")}</MenuLink>}
+                          {showMunicipality && <MenuLink href="/municipality" onNavigate={() => setUserOpen(false)}>{t("nav.municipality")}</MenuLink>}
+                        </>
+                      )}
+                      <form action={logoutAction}>
+                        <button type="submit" className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-surface-muted">
+                          {t("nav.signOut")}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
-              <Link href="/login" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-base font-medium text-foreground hover:bg-surface-muted">
-                Staff sign in
-              </Link>
+              <>
+                <Link href="/login" className={buttonClass("ghost", "sm")}>
+                  {t("nav.staffSignIn")}
+                </Link>
+                {devMode && (
+                  <Link href="/dev-login" className="px-2 text-xs font-medium text-foreground-muted underline underline-offset-2">
+                    {t("nav.devPersonas")}
+                  </Link>
+                )}
+                <DemoLoginButton />
+              </>
             )}
           </div>
-        </nav>
-      )}
-    </header>
+
+          <div className="flex items-center gap-2 lg:hidden">
+            <LanguageSwitcher />
+            {!user && <DemoLoginButton className="hidden sm:inline-flex" />}
+            <button
+              type="button"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-foreground"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span className="sr-only">{menuOpen ? t("shell.closeMenu") : t("shell.openMenu")}</span>
+              {menuOpen ? <CloseIcon /> : <MenuIcon />}
+              {!menuOpen && <Badge count={unreadMessages + unreadCount} label={t("nav.inbox")} />}
+            </button>
+          </div>
+        </div>
+
+        {menuOpen && (
+          <nav id="mobile-menu" aria-label={t("shell.mobileNav")} className="border-t border-border lg:hidden">
+            <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+              <MenuLink href="/assistant" onNavigate={() => setMenuOpen(false)}>{t("nav.assistant")}</MenuLink>
+              {user ? (
+                <>
+                  <MenuLink href="/messages" onNavigate={() => setMenuOpen(false)}>
+                    {t("nav.messages")} {unreadMessages > 0 && `(${unreadMessages})`}
+                  </MenuLink>
+                  <MenuLink href="/inbox" onNavigate={() => setMenuOpen(false)}>
+                    {t("nav.inbox")} {unreadCount > 0 && `(${unreadCount})`}
+                  </MenuLink>
+                  <MenuLink href="/impact" onNavigate={() => setMenuOpen(false)}>{t("nav.progress")}</MenuLink>
+                  <MenuLink href="/needs" onNavigate={() => setMenuOpen(false)}>{t("nav.needs")}</MenuLink>
+                  {showModeration && <MenuLink href="/moderation" onNavigate={() => setMenuOpen(false)}>{t("nav.moderation")}</MenuLink>}
+                  {showMunicipality && <MenuLink href="/municipality" onNavigate={() => setMenuOpen(false)}>{t("nav.municipality")}</MenuLink>}
+                  <form action={logoutAction}>
+                    <button type="submit" className="w-full rounded-xl px-3 py-3 text-left text-base font-medium text-foreground hover:bg-surface-muted">
+                      {t("nav.signOut")} ({user.name})
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <MenuLink href="/needs" onNavigate={() => setMenuOpen(false)}>{t("nav.needs")}</MenuLink>
+                  <MenuLink href="/login" onNavigate={() => setMenuOpen(false)}>{t("nav.staffSignIn")}</MenuLink>
+                  <div className="px-1 pt-1 sm:hidden">
+                    <DemoLoginButton className="w-full" />
+                  </div>
+                </>
+              )}
+            </div>
+          </nav>
+        )}
+      </header>
+
+      {/* Mobile: the core destinations are always one tap away; Plans carries the live count. */}
+      <nav
+        aria-label={t("shell.mainNav")}
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        <ul className="mx-auto grid max-w-xl grid-cols-5">
+          {CORE_LINKS.map(({ href, labelKey, Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium ${
+                    active ? "text-brand-strong" : "text-foreground-muted"
+                  }`}
+                >
+                  <span className="relative">
+                    <Icon size={22} />
+                    {href === "/plans" && <Badge count={planBadge} label={t("nav.plans")} />}
+                  </span>
+                  <span className="max-w-full truncate">{t(labelKey)}</span>
+                  {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-brand" />}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
+  );
+}
+
+function MenuLink({ href, children, onNavigate }: { href: string; children: React.ReactNode; onNavigate: () => void }) {
+  return (
+    <Link href={href} onClick={onNavigate} className="block rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-surface-muted lg:text-sm">
+      {children}
+    </Link>
   );
 }

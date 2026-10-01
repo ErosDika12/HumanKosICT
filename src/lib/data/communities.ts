@@ -67,7 +67,7 @@ export interface CommunityDetail extends Omit<CommunitySummary, "nextActivity"> 
   upcomingActivities: { slug: string; title: string; date: string; startTime: string }[];
   /** Published activities that already happened on the simulated clock, newest first. */
   pastActivities: { slug: string; title: string; date: string; startTime: string }[];
-  projects: { slug: string; title: string; status: "active" | "completed"; volunteersNeeded: number; volunteerCount: number }[];
+  projects: { slug: string; title: string; titleSq: string; status: "active" | "completed"; volunteersNeeded: number; volunteerCount: number }[];
   viewerMembership: ViewerMembership;
 }
 
@@ -129,6 +129,7 @@ export async function getCommunityBySlug(
     projects: community.projects.map((p) => ({
       slug: p.slug,
       title: p.title,
+      titleSq: p.titleSq,
       status: p.status === "COMPLETED" ? "completed" : "active",
       volunteersNeeded: p.volunteersNeeded,
       volunteerCount: p._count.volunteers,

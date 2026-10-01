@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BridgeStory } from "@/components/BridgeStory";
-import { DemoBadge } from "@/components/DemoBadge";
 import { PageShell, Pill } from "@/components/ui";
 import { getBridgeProposal, getBridgeShowcase } from "@/lib/data/bridge";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -11,13 +10,10 @@ import {
   declineBridgeProposalAction,
   acceptBridgeProposalAction,
 } from "@/lib/actions/bridge-actions";
-
-const STATUS_LABEL: Record<string, string> = {
-  suggested: "Suggested — not yet reviewed",
-  saved: "Saved by an organizer",
-  accepted: "Accepted",
-  declined: "Declined",
-};
+import { getI18n } from "@/lib/i18n/server";
+import { areaFromSq } from "@/lib/i18n/areas";
+import { localizeText } from "@/lib/i18n/content";
+import { localizeBridgeText } from "@/lib/i18n/bridge-text";
 
 export default async function BridgeProposalPage({
   params,
@@ -28,89 +24,86 @@ export default async function BridgeProposalPage({
 }) {
   const { id } = await params;
   const { updated } = await searchParams;
+  const { t, locale } = await getI18n();
   const user = await getCurrentUser();
   const [proposal, showcase] = await Promise.all([getBridgeProposal(id, user?.id), getBridgeShowcase(id, user?.id)]);
   if (!proposal || !showcase) notFound();
 
+  const field = (key: string) => t("bridge.org.editable", { field: t(key) });
+  const textareaClass = "rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground";
+  const btn = "min-h-10 rounded-full border border-border px-5 py-2 text-sm font-medium text-foreground hover:bg-surface-muted";
+
   return (
     <PageShell className="max-w-4xl">
       <Link href="/bridge" className="text-sm font-medium text-brand-strong underline underline-offset-2">
-        ← Back to BRIDGE
+        ← {t("bridge.back")}
       </Link>
 
       <header className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
-        {updated && <p className="text-sm font-medium text-success">Proposal updated.</p>}
+        {updated && <p className="text-sm font-medium text-success">{t("bridge.updated")}</p>}
         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {proposal.communityAName} × {proposal.communityBName}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone={proposal.status === "accepted" ? "success" : "neutral"}>{STATUS_LABEL[proposal.status]}</Pill>
+          <Pill tone={proposal.status === "accepted" ? "success" : "neutral"}>{t(`bridge.status.long.${proposal.status}`)}</Pill>
           <span className="text-sm text-foreground-muted">
-            Addresses a need in {proposal.needAreaSq}: &ldquo;{proposal.needDescription}&rdquo;
+            {t("bridge.addresses", { area: areaFromSq(proposal.needAreaSq, t), need: localizeText(proposal.needDescription, locale) })}
           </span>
         </div>
       </header>
 
       <BridgeStory showcase={showcase} signedIn={Boolean(user)} />
 
+      <section className="grid gap-4 rounded-2xl border border-border bg-surface p-5 text-sm sm:grid-cols-2">
+        <div>
+          <h2 className="font-semibold text-foreground">{t("bridge.resources")}</h2>
+          <p className="mt-1 text-foreground-muted">{localizeBridgeText(proposal.requiredResources, t, locale)}</p>
+        </div>
+        <div>
+          <h2 className="font-semibold text-foreground">{t("bridge.nextAction")}</h2>
+          <p className="mt-1 text-foreground-muted">{localizeBridgeText(proposal.suggestedNextAction, t, locale)}</p>
+        </div>
+      </section>
+
       {proposal.viewerCanDecide && proposal.status !== "accepted" && proposal.status !== "declined" && (
-        <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5">
-          <h2 className="font-display text-sm font-semibold text-foreground">Organizer actions</h2>
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5">
+          <h2 className="font-display text-sm font-semibold text-foreground">{t("bridge.org.title")}</h2>
           <form action={updateBridgeProposalAction} className="flex flex-col gap-3">
             <input type="hidden" name="id" value={proposal.id} />
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Mutual benefit (editable)</span>
-              <textarea
-                name="mutualBenefit"
-                defaultValue={proposal.mutualBenefit}
-                rows={2}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <span className="font-medium text-foreground">{field("bridge.mutual")}</span>
+              <textarea name="mutualBenefit" defaultValue={proposal.mutualBenefit} rows={2} className={textareaClass} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Required resources (editable)</span>
-              <textarea
-                name="requiredResources"
-                defaultValue={proposal.requiredResources}
-                rows={2}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <span className="font-medium text-foreground">{field("bridge.resources")}</span>
+              <textarea name="requiredResources" defaultValue={proposal.requiredResources} rows={2} className={textareaClass} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Suggested next action (editable)</span>
-              <textarea
-                name="suggestedNextAction"
-                defaultValue={proposal.suggestedNextAction}
-                rows={2}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <span className="font-medium text-foreground">{field("bridge.nextAction")}</span>
+              <textarea name="suggestedNextAction" defaultValue={proposal.suggestedNextAction} rows={2} className={textareaClass} />
             </label>
-            <button
-              type="submit"
-              className="inline-flex w-fit items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted"
-            >
-              Save edits
+            <button type="submit" className={`${btn} w-fit`}>
+              {t("bridge.org.saveEdits")}
             </button>
           </form>
 
           <div className="flex flex-wrap gap-2">
             <form action={saveBridgeProposalAction}>
               <input type="hidden" name="id" value={proposal.id} />
-              <button type="submit" className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted">
-                Save for later
+              <button type="submit" className={btn}>
+                {t("bridge.org.saveLater")}
               </button>
             </form>
             <form action={acceptBridgeProposalAction}>
               <input type="hidden" name="id" value={proposal.id} />
-              <button type="submit" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-strong">
-                Accept → create draft project
+              <button type="submit" className="min-h-10 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white hover:bg-brand-strong">
+                {t("bridge.org.accept")}
               </button>
             </form>
             <form action={declineBridgeProposalAction}>
               <input type="hidden" name="id" value={proposal.id} />
-              <button type="submit" className="rounded-lg border border-danger px-4 py-2 text-sm font-medium text-danger hover:bg-danger-tint">
-                Decline
+              <button type="submit" className="min-h-10 rounded-full border border-danger px-5 py-2 text-sm font-medium text-danger hover:bg-danger-tint">
+                {t("bridge.org.decline")}
               </button>
             </form>
           </div>
@@ -118,9 +111,7 @@ export default async function BridgeProposalPage({
       )}
 
       {!proposal.viewerCanDecide && (
-        <p className="text-xs text-foreground-muted">
-          Only an organizer of {proposal.communityAName} or {proposal.communityBName} can act on this proposal.
-        </p>
+        <p className="text-xs text-foreground-muted">{t("bridge.onlyOrganizers", { a: proposal.communityAName, b: proposal.communityBName })}</p>
       )}
     </PageShell>
   );

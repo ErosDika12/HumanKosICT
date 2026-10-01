@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
 import { createProject, joinProject, withdrawProject, type ProjectInput } from "@/lib/data/projects";
@@ -45,7 +46,7 @@ export async function createProjectAction(formData: FormData): Promise<void> {
     slug = await createProject(user.id, communitySlug, input);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not create project.";
-    redirect(`/communities/${communitySlug}/projects/new?error=${encodeURIComponent(message)}`);
+    redirect(`/communities/${communitySlug}/projects/new?error=${errorParam(message)}`);
   }
   redirect(`/projects/${slug}?created=1`);
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
 import { createActivity, updateActivity, cancelActivity, type ActivityInput } from "@/lib/data/organizer-activities";
@@ -43,7 +44,7 @@ export async function createActivityAction(formData: FormData): Promise<void> {
     slug = await createActivity(user.id, communitySlug, input);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not create activity.";
-    redirect(`/communities/${communitySlug}/activities/new?error=${encodeURIComponent(message)}`);
+    redirect(`/communities/${communitySlug}/activities/new?error=${errorParam(message)}`);
   }
   redirect(`/discover/${slug}?created=1`);
 }
@@ -57,7 +58,7 @@ export async function updateActivityAction(formData: FormData): Promise<void> {
     await updateActivity(user.id, slug, input);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not update activity.";
-    redirect(`/discover/${slug}/edit?error=${encodeURIComponent(message)}`);
+    redirect(`/discover/${slug}/edit?error=${errorParam(message)}`);
   }
   revalidatePath(`/discover/${slug}`);
   revalidatePath("/discover");

@@ -1,4 +1,6 @@
 import type { BridgeGraph } from "@/lib/data/bridge";
+import { getI18n } from "@/lib/i18n/server";
+import { localizeText } from "@/lib/i18n/content";
 
 const WIDTH = 640;
 const ROW_HEIGHT = 64;
@@ -8,12 +10,11 @@ const NEED_X = 140;
 /**
  * Inline SVG, server-rendered — no client JS, no charting library. Shows
  * only the communities and needs that appear in an active BRIDGE proposal
- * (never the whole community graph, per the Phase 5 brief's "limit the
- * visual to the most relevant entities"). Every node and edge carries a
- * text label — nothing here is color-only, and the accessible list next to
- * it (BridgePage) is the full non-visual equivalent, not a lesser fallback.
+ * (never the whole community graph). Every node and edge carries a text
+ * label — nothing here is colour-only.
  */
-export function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
+export async function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
+  const { t, locale } = await getI18n();
   const communities = graph.nodes.filter((n) => n.kind === "community");
   const needs = graph.nodes.filter((n) => n.kind === "need");
   const height = Math.max(communities.length, needs.length) * ROW_HEIGHT + 40;
@@ -25,7 +26,7 @@ export function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
   if (graph.nodes.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-surface-muted text-sm text-foreground-muted">
-        No active BRIDGE proposals to visualize yet.
+        {t("bridge.graph.empty")}
       </div>
     );
   }
@@ -33,7 +34,7 @@ export function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
   return (
     <svg
       role="img"
-      aria-label={`BRIDGE network: ${communities.length} communities connected through ${needs.length} community needs. See the list below for the full accessible detail.`}
+      aria-label={t("bridge.graph.aria", { c: communities.length, n: needs.length })}
       viewBox={`0 0 ${WIDTH} ${height}`}
       className="h-auto w-full rounded-xl border border-border bg-surface"
     >
@@ -41,17 +42,7 @@ export function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
         const from = positions.get(e.from);
         const to = positions.get(e.to);
         if (!from || !to) return null;
-        return (
-          <line
-            key={i}
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
-            stroke="var(--color-border, #d8d2c4)"
-            strokeWidth={2}
-          />
-        );
+        return <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="var(--color-border, #d8d2c4)" strokeWidth={2} />;
       })}
       {needs.map((n) => {
         const pos = positions.get(n.id)!;
@@ -59,7 +50,7 @@ export function BridgeNetworkGraph({ graph }: { graph: BridgeGraph }) {
           <g key={n.id}>
             <rect x={pos.x - 90} y={pos.y - 16} width={180} height={32} rx={8} fill="var(--color-accent-tint, #fdf1df)" />
             <text x={pos.x} y={pos.y + 4} textAnchor="middle" fontSize={11} fill="currentColor">
-              {truncate(n.label, 26)}
+              {truncate(localizeText(n.label, locale), 26)}
             </text>
           </g>
         );

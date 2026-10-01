@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { DemoActivity } from "@/lib/types";
+import { useI18n } from "@/components/LocaleProvider";
+import { localizeActivity } from "@/lib/i18n/content";
 
 /**
  * MapLibre's published ESM build resolves its worker script relative to its
@@ -42,13 +44,13 @@ const CATEGORY_GLYPH: Record<DemoActivity["category"], string> = {
   environment: "EN",
 };
 
-export const CATEGORY_LEGEND: { category: DemoActivity["category"]; label: string }[] = [
-  { category: "technology", label: "Technology" },
-  { category: "environment", label: "Environment" },
-  { category: "sports", label: "Sports" },
-  { category: "education", label: "Education" },
-  { category: "culture", label: "Culture" },
-  { category: "community", label: "Community" },
+export const CATEGORY_LEGEND: { category: DemoActivity["category"] }[] = [
+  { category: "technology" },
+  { category: "environment" },
+  { category: "sports" },
+  { category: "education" },
+  { category: "culture" },
+  { category: "community" },
 ];
 
 /**
@@ -63,22 +65,22 @@ const DEMO_STYLE_URL =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty";
 
 /** Built with DOM APIs (textContent), never HTML strings — activity titles are organizer-authored. */
-function buildPopup(activity: DemoActivity): HTMLElement {
+function buildPopup(activity: DemoActivity, title: string, meta: string, linkText: string): HTMLElement {
   const box = document.createElement("div");
   box.style.color = "#1c1b1a";
-  const title = document.createElement("strong");
-  title.textContent = activity.title;
-  const meta = document.createElement("div");
-  meta.style.fontSize = "12px";
-  meta.textContent = `${activity.areaEn} · ${activity.date} · ${activity.startTime}`;
+  const titleEl = document.createElement("strong");
+  titleEl.textContent = title;
+  const metaEl = document.createElement("div");
+  metaEl.style.fontSize = "12px";
+  metaEl.textContent = meta;
   const link = document.createElement("a");
   link.href = `/discover/${encodeURIComponent(activity.slug)}`;
-  link.textContent = "View activity →";
+  link.textContent = linkText;
   link.style.fontSize = "12px";
   link.style.fontWeight = "600";
   link.style.color = "#163c6b";
   link.style.textDecoration = "underline";
-  box.append(title, meta, link);
+  box.append(titleEl, metaEl, link);
   return box;
 }
 
@@ -99,6 +101,7 @@ export function ActivityMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Map<string, Marker>>(new Map());
   const [failed, setFailed] = useState(false);
+  const { t, locale, shortDate } = useI18n();
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -159,10 +162,8 @@ export function ActivityMap({
     activities.forEach((activity) => {
       const el = document.createElement("button");
       el.type = "button";
-      el.setAttribute(
-        "aria-label",
-        `${activity.title} — ${activity.areaEn}, ${CATEGORY_LEGEND.find((c) => c.category === activity.category)?.label ?? activity.category}`
-      );
+      const text = localizeActivity(activity, locale);
+      el.setAttribute("aria-label", `${text.title} — ${t(`area.${activity.areaEn}`)}, ${t(`category.${activity.category}`)}`);
       const isActive = activity.slug === activeSlug;
       const size = isActive ? 32 : 28; // WCAG 2.2 target size: at least 24x24 CSS px
       el.style.width = `${size}px`;
@@ -184,7 +185,11 @@ export function ActivityMap({
 
       const marker = new Marker({ element: el })
         .setLngLat([activity.lng, activity.lat])
-        .setPopup(new Popup({ offset: 14, closeButton: false }).setDOMContent(buildPopup(activity)))
+        .setPopup(
+          new Popup({ offset: 14, closeButton: false }).setDOMContent(
+            buildPopup(activity, text.title, `${t(`area.${activity.areaEn}`)} · ${shortDate(activity.date)} · ${activity.startTime}`, t("map.viewActivity"))
+          )
+        )
         .addTo(map);
 
       el.addEventListener("click", () => onSelect?.(activity.slug));
@@ -234,25 +239,25 @@ export function ActivityMap({
     return () => {
       map.off("zoomend", relax);
     };
-  }, [activities, activeSlug, onSelect, failed]);
+  }, [activities, activeSlug, onSelect, failed, t, locale, shortDate]);
 
   if (failed) {
     return (
       <div role="status" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-muted p-4">
         <div>
-          <p className="font-medium text-foreground">The map couldn&apos;t load right now</p>
-          <p className="text-sm text-foreground-muted">Here are the same activities as a list, grouped by area.</p>
+          <p className="font-medium text-foreground">{t("map.failed.title")}</p>
+          <p className="text-sm text-foreground-muted">{t("map.failed.body")}</p>
         </div>
         <ul className="grid max-h-[360px] gap-2 overflow-y-auto sm:grid-cols-2">
           {activities.slice(0, 12).map((a) => (
             <li key={a.slug}>
               <a
                 href={`/discover/${encodeURIComponent(a.slug)}`}
-                className="flex min-h-11 flex-col rounded-xl border border-border bg-surface px-3 py-2 text-sm hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="flex min-h-11 flex-col rounded-xl border border-border bg-surface px-3 py-2 text-sm hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2"
               >
-                <span className="font-medium text-foreground">{a.title}</span>
+                <span className="font-medium text-foreground">{localizeActivity(a, locale).title}</span>
                 <span className="text-xs text-foreground-muted">
-                  {a.areaEn} · {a.date} · {a.startTime}
+                  {t(`area.${a.areaEn}`)} · {shortDate(a.date)} · {a.startTime}
                 </span>
               </a>
             </li>
@@ -270,11 +275,11 @@ export function ActivityMap({
         ref={containerRef}
         className={`relative ${heightClass} flex-1 overflow-hidden rounded-2xl border border-border`}
         role="application"
-        aria-label="Map of Prishtina 2036 demo activities. Use the list view for a fully keyboard-accessible alternative."
+        aria-label={t("map.aria")}
       />
       {showLegend && categoriesShown.size > 0 && (
         <ul
-          aria-label="Map marker legend — category and letter code (color is never the only signal)"
+          aria-label={t("discover.view.map")}
           className="flex flex-wrap gap-x-3 gap-y-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground-muted"
         >
           {CATEGORY_LEGEND.filter((c) => categoriesShown.has(c.category)).map((c) => (
@@ -286,7 +291,7 @@ export function ActivityMap({
               >
                 {CATEGORY_GLYPH[c.category]}
               </span>
-              {c.label}
+              {t(`category.${c.category}`)}
             </li>
           ))}
         </ul>

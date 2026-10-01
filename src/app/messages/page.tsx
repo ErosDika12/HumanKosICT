@@ -1,25 +1,32 @@
-import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
-import { Avatar, Button, ButtonLink, Card, DemoFriendNote, EmptyState, Eyebrow, PageShell, Pill } from "@/components/ui";
+import type { Metadata } from "next";
+import { ConversationList } from "@/components/ConversationList";
+import { Button, ButtonLink, EmptyState, PageShell } from "@/components/ui";
+import { ChatIcon } from "@/components/icons";
 import { demoLoginAction } from "@/lib/auth/actions";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listThreads } from "@/lib/data/messages";
+import { getI18n } from "@/lib/i18n/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("nav.messages") };
+}
 
 export default async function MessagesPage() {
+  const { t } = await getI18n();
   const user = await getCurrentUser();
   if (!user) {
     return (
       <PageShell className="max-w-xl">
-        <DemoBadge className="self-start" />
         <EmptyState
-          title="Messages"
+          title={t("messages.title")}
           action={
             <form action={demoLoginAction}>
-              <Button variant="accent" size="lg">Log in as demo</Button>
+              <Button variant="accent" size="lg">{t("action.demoLogin")}</Button>
             </form>
           }
         >
-          Message your demo friends after you add them. Everything you send is stored on your demo account.
+          {t("messages.lead")}
         </EmptyState>
       </PageShell>
     );
@@ -27,49 +34,32 @@ export default async function MessagesPage() {
   const threads = await listThreads(user.id);
 
   return (
-    <PageShell className="max-w-3xl">
-      <header className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
-        <Eyebrow>Messages</Eyebrow>
-        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Conversations</h1>
-        <p className="text-foreground-muted">Direct messages with your friends. Demo friends never reply live.</p>
+    <PageShell className="max-w-5xl">
+      <header className="flex flex-col gap-1">
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">{t("messages.title")}</h1>
+        <p className="text-foreground-muted">{t("messages.lead")}</p>
       </header>
       {threads.length === 0 ? (
         <EmptyState
-          title="No conversations yet"
+          title={t("messages.none.title")}
           action={
             <ButtonLink href="/people" variant="primary">
-              Find friends
+              {t("nav.friends")}
             </ButtonLink>
           }
         >
-          Add a demo friend, then send the first message.
+          {t("messages.none.body")}
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {threads.map((t) => (
-            <li key={t.friendId}>
-              <Link href={`/messages/${t.friendId}`} className="block">
-                <Card className="flex items-center gap-3 p-4 transition-shadow hover:shadow-md">
-                  <Avatar name={t.friendName} size={44} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display font-semibold text-foreground">{t.friendName}</span>
-                      {t.hasSeededExample && <Pill tone="neutral">includes demo examples</Pill>}
-                      {t.unread > 0 && <Pill tone="danger">{t.unread} new</Pill>}
-                    </div>
-                    <p className="truncate text-sm text-foreground-muted">
-                      {t.lastIsMine && "You: "}
-                      {t.lastBody}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+          <ConversationList threads={threads} />
+          <div className="hidden min-h-64 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-muted text-center text-foreground-muted lg:flex">
+            <ChatIcon size={28} />
+            <p className="text-sm">{t("messages.conversations")}</p>
+          </div>
+        </div>
       )}
-      <DemoFriendNote />
+      <p className="text-xs text-foreground-muted">{t("friends.note")}</p>
     </PageShell>
   );
 }

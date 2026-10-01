@@ -1,39 +1,29 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
-import { JourneyChecklist } from "@/components/JourneyChecklist";
-import { Eyebrow } from "@/components/ui";
+import type { Metadata } from "next";
 import { DiscoverExplorer } from "@/components/DiscoverExplorer";
 import { NearMeButton } from "@/components/NearMeButton";
+import { SearchIcon, CloseIcon } from "@/components/icons";
 import { listActivities, listDiscoveryFacets, type ActivityFilters } from "@/lib/data/activities";
-import { scoreActivities, type DayBucket } from "@/lib/data/recommendations";
+import { scoreActivities } from "@/lib/data/recommendations";
+import { matchesQuery } from "@/lib/data/search";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUserInterests } from "@/lib/data/interests";
-import { getInterest, type ActivityCategory, type InterestId } from "@/lib/types";
-import { SIMULATED_NOW_LABEL, isSimulatedPast } from "@/lib/simulated-clock";
+import type { ActivityCategory, InterestId } from "@/lib/types";
+import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
+import { isTimeWindow, type TimeWindow } from "@/lib/time-window";
+import { getI18n } from "@/lib/i18n/server";
 
-const CATEGORIES: { id: ActivityCategory; label: string }[] = [
-  { id: "sports", label: "Sports" },
-  { id: "education", label: "Education" },
-  { id: "culture", label: "Culture" },
-  { id: "technology", label: "Technology" },
-  { id: "environment", label: "Environment" },
-  { id: "community", label: "Community" },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("nav.discover") };
+}
 
-const AGE_ELIGIBILITY: { id: NonNullable<ActivityFilters["ageEligibility"]>; label: string }[] = [
-  { id: "all-ages", label: "All ages" },
-  { id: "adults-only", label: "Adults only" },
-  { id: "supervised-minors", label: "Supervised minors" },
-];
-
-const DIFFICULTIES: { id: NonNullable<ActivityFilters["difficulty"]>; label: string }[] = [
-  { id: "beginner", label: "Beginner" },
-  { id: "intermediate", label: "Intermediate" },
-  { id: "advanced", label: "Advanced" },
-  { id: "all-levels", label: "All levels" },
-];
+const CATEGORIES: ActivityCategory[] = ["technology", "environment", "sports", "education", "culture", "community"];
+const AGE: NonNullable<ActivityFilters["ageEligibility"]>[] = ["all-ages", "adults-only", "supervised-minors"];
+const DIFFICULTY: NonNullable<ActivityFilters["difficulty"]>[] = ["beginner", "intermediate", "advanced", "all-levels"];
 
 interface DiscoverSearchParams {
+  q?: string;
   interests?: string;
   category?: string;
   area?: string;
@@ -45,73 +35,69 @@ interface DiscoverSearchParams {
   when?: string;
   lat?: string;
   lng?: string;
-  all?: string;
   view?: string;
-  welcome?: string;
   past?: string;
 }
 
-function buildHref(base: URLSearchParams, key: string, value: string | undefined) {
+const PARAM_KEYS = ["q", "interests", "category", "area", "cost", "indoor", "accessibility", "ageEligibility", "difficulty", "when", "lat", "lng", "view", "past"] as const;
+
+function hrefWith(base: URLSearchParams, key: string, value: string | undefined): string {
   const params = new URLSearchParams(base);
-  if (value === undefined) {
-    params.delete(key);
-  } else if (params.get(key) === value) {
-    params.delete(key);
-  } else {
-    params.set(key, value);
-  }
+  if (value === undefined || params.get(key) === value) params.delete(key);
+  else params.set(key, value);
   const qs = params.toString();
   return qs ? `/discover?${qs}` : "/discover";
 }
 
-function toggleInList(base: URLSearchParams, key: string, value: string) {
+function toggleInList(base: URLSearchParams, key: string, value: string): string {
   const params = new URLSearchParams(base);
-  const current = (params.get(key)?.split(",").filter(Boolean) ?? []) as string[];
-  const next = current.includes(value)
-    ? current.filter((v) => v !== value)
-    : [...current, value];
+  const current = params.get(key)?.split(",").filter(Boolean) ?? [];
+  const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
   if (next.length > 0) params.set(key, next.join(","));
   else params.delete(key);
   const qs = params.toString();
   return qs ? `/discover?${qs}` : "/discover";
 }
 
-export default async function DiscoverPage({
-  searchParams,
-}: {
-  searchParams: Promise<DiscoverSearchParams>;
-}) {
-  const resolved = await searchParams;
-  const category = resolved.category as ActivityCategory | undefined;
-  const area = resolved.area;
-  const cost = resolved.cost as ActivityFilters["cost"] | undefined;
-  const indoor =
-    resolved.indoor === "indoor" ? true : resolved.indoor === "outdoor" ? false : undefined;
-  const accessibility = resolved.accessibility?.split(",").filter(Boolean) ?? [];
-  const ageEligibility = resolved.ageEligibility as ActivityFilters["ageEligibility"] | undefined;
-  const difficulty = resolved.difficulty as ActivityFilters["difficulty"] | undefined;
-  const when = resolved.when as DayBucket | undefined;
-  const lat = resolved.lat ? Number(resolved.lat) : undefined;
-  const lng = resolved.lng ? Number(resolved.lng) : undefined;
-  const origin = lat !== undefined && lng !== undefined && !Number.isNaN(lat) && !Number.isNaN(lng)
-    ? { lat, lng }
-    : undefined;
+function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      aria-pressed={active}
+      className={`inline-flex min-h-10 items-center rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+        active ? "border-brand bg-brand text-white" : "border-border bg-surface text-foreground hover:bg-surface-muted"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export default async function DiscoverPage({ searchParams }: { searchParams: Promise<DiscoverSearchParams> }) {
+  const sp = await searchParams;
+  const { t, locale, longDate } = await getI18n();
+
+  const q = (sp.q ?? "").slice(0, 80).trim();
+  const category = CATEGORIES.includes(sp.category as ActivityCategory) ? (sp.category as ActivityCategory) : undefined;
+  const area = sp.area;
+  const cost = sp.cost === "free" || sp.cost === "paid" ? sp.cost : undefined;
+  const indoor = sp.indoor === "indoor" ? true : sp.indoor === "outdoor" ? false : undefined;
+  const accessibility = sp.accessibility?.split(",").filter(Boolean) ?? [];
+  const ageEligibility = AGE.includes(sp.ageEligibility as (typeof AGE)[number]) ? (sp.ageEligibility as (typeof AGE)[number]) : undefined;
+  const difficulty = DIFFICULTY.includes(sp.difficulty as (typeof DIFFICULTY)[number]) ? (sp.difficulty as (typeof DIFFICULTY)[number]) : undefined;
+  const when: TimeWindow | undefined = isTimeWindow(sp.when) ? sp.when : undefined;
+  const lat = sp.lat ? Number(sp.lat) : undefined;
+  const lng = sp.lng ? Number(sp.lng) : undefined;
+  const origin = lat !== undefined && lng !== undefined && !Number.isNaN(lat) && !Number.isNaN(lng) ? { lat, lng } : undefined;
 
   const user = await getCurrentUser();
-  const explicitInterests = resolved.interests?.split(",").filter(Boolean) as
-    | InterestId[]
-    | undefined;
-  // No explicit ?interests= on the URL and signed in → use the member's own
-  // saved preferences as the recommendation input (Phase 2 persistence,
-  // reused here). Still just a starting point: adjusting any filter below
-  // changes the URL, which the visitor can share or bookmark either way.
-  const showAll = resolved.all === "1";
-  const interestIds =
-    explicitInterests ?? (user && !showAll ? await getUserInterests(user.id) : []);
+  const explicitInterests = sp.interests?.split(",").filter(Boolean) as InterestId[] | undefined;
+  // Interests only RANK results (never hide them): the list always shows everything that matches the filters.
+  const interestIds = explicitInterests ?? (user ? await getUserInterests(user.id) : []);
 
   const filters: ActivityFilters = {
     category,
-    interestIds: interestIds.length > 0 ? interestIds : undefined,
     area,
     cost,
     indoor,
@@ -121,235 +107,178 @@ export default async function DiscoverPage({
     when,
   };
 
-  const [filteredRaw, allActivities, facets] = await Promise.all([
-    listActivities(filters),
-    listActivities(),
-    listDiscoveryFacets(),
-  ]);
+  const [filteredRaw, facets] = await Promise.all([listActivities(filters), listDiscoveryFacets()]);
+  const searched = q ? filteredRaw.filter((a) => matchesQuery(a, q)) : filteredRaw;
+  const includePast = sp.past === "1";
+  const visible = includePast ? searched : searched.filter((a) => !isSimulatedPast(a.date));
+  const hiddenPast = searched.length - visible.length;
+  const results = scoreActivities(visible, { interestIds, when, origin, locale });
 
-  // Activities that already happened on the simulated clock are hidden unless asked for.
-  const includePast = resolved.past === "1";
-  const visibleRaw = includePast ? filteredRaw : filteredRaw.filter((a) => !isSimulatedPast(a.date));
-  const hiddenPastCount = filteredRaw.length - visibleRaw.length;
-  const filtered = scoreActivities(visibleRaw, { interestIds, when, origin });
+  const current = new URLSearchParams();
+  for (const key of PARAM_KEYS) {
+    const v = sp[key];
+    if (v) current.set(key, v);
+  }
 
-  const currentParams = new URLSearchParams();
-  if (resolved.interests) currentParams.set("interests", resolved.interests);
-  if (resolved.category) currentParams.set("category", resolved.category);
-  if (resolved.area) currentParams.set("area", resolved.area);
-  if (resolved.cost) currentParams.set("cost", resolved.cost);
-  if (resolved.indoor) currentParams.set("indoor", resolved.indoor);
-  if (resolved.accessibility) currentParams.set("accessibility", resolved.accessibility);
-  if (resolved.ageEligibility) currentParams.set("ageEligibility", resolved.ageEligibility);
-  if (resolved.difficulty) currentParams.set("difficulty", resolved.difficulty);
-  if (resolved.when) currentParams.set("when", resolved.when);
-  if (resolved.lat) currentParams.set("lat", resolved.lat);
-  if (resolved.lng) currentParams.set("lng", resolved.lng);
-  if (resolved.all) currentParams.set("all", resolved.all);
-  if (resolved.view) currentParams.set("view", resolved.view);
-  if (resolved.past) currentParams.set("past", resolved.past);
+  // Active-filter chips with a one-tap remove.
+  const active: { label: string; href: string }[] = [];
+  if (q) active.push({ label: t("filter.query", { q }), href: hrefWith(current, "q", undefined) });
+  if (when) active.push({ label: t(when === "week" ? "filter.week" : when === "weekend" ? "filter.weekend" : when === "next-weekend" ? "filter.nextWeekend" : "filter.weekday"), href: hrefWith(current, "when", undefined) });
+  if (cost) active.push({ label: t(cost === "free" ? "filter.free" : "filter.paid"), href: hrefWith(current, "cost", undefined) });
+  if (category) active.push({ label: t(`category.${category}`), href: hrefWith(current, "category", undefined) });
+  if (area) active.push({ label: t(`area.${area}`), href: hrefWith(current, "area", undefined) });
+  if (indoor !== undefined) active.push({ label: t(indoor ? "fact.indoor" : "fact.outdoor"), href: hrefWith(current, "indoor", undefined) });
+  if (ageEligibility) active.push({ label: t(`age.${ageEligibility}`), href: hrefWith(current, "ageEligibility", undefined) });
+  if (difficulty) active.push({ label: t(`difficulty.${difficulty}`), href: hrefWith(current, "difficulty", undefined) });
+  for (const tag of accessibility) active.push({ label: t(`access.${tag}`), href: toggleInList(current, "accessibility", tag) });
+
+  const detailedActive = Boolean(category || area || indoor !== undefined || ageEligibility || difficulty || accessibility.length > 0 || when === "next-weekend" || when === "weekday" || cost === "paid" || includePast);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
-      {user?.isDemoVisitor && <JourneyChecklist userId={user.id} name={user.name} welcome={resolved.welcome === "1"} />}
-      <div className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
-        <Eyebrow>Discover · Prishtina, {SIMULATED_NOW_LABEL}</Eyebrow>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          What can you do in Prishtina this weekend?
-        </h1>
-        <p className="text-sm text-foreground-muted">
-          Çfarë mund të bësh në Prishtinë këtë fundjavë? Showing {filtered.length} of {allActivities.length} fictional demo
-          activities.
-        </p>
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{t("discover.title")}</h1>
+        <p className="text-sm text-foreground-muted">{t("discover.today", { date: longDate(SIMULATED_NOW_ISO) })}</p>
       </div>
 
-      {(interestIds.length > 0 || (user && showAll)) && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {interestIds.length > 0 ? (
-            <>
-              <span className="text-foreground-muted">
-                {explicitInterests ? "Personalized for:" : "Using your saved interests:"}
-              </span>
-              {interestIds.map((id) => {
-                try {
-                  const interest = getInterest(id);
-                  return (
-                    <span key={id} className="rounded-full bg-brand-tint px-3 py-1 text-brand-strong">
-                      {interest.emoji} {interest.labelEn}
-                    </span>
-                  );
-                } catch {
-                  return null;
-                }
-              })}
-              <Link href="/onboarding" className="text-brand-strong underline underline-offset-2">
-                Edit interests
-              </Link>
-              <Link href={buildHref(currentParams, "all", "1")} className="font-semibold text-brand-strong underline underline-offset-2">
-                Show all activities
-              </Link>
-            </>
-          ) : (
-            <>
-              <span className="text-foreground-muted">Showing everything, not just your interests.</span>
-              <Link href={buildHref(currentParams, "all", undefined)} className="font-semibold text-brand-strong underline underline-offset-2">
-                Use my interests
-              </Link>
-            </>
+      <form action="/discover" method="get" role="search" className="flex gap-2">
+        {PARAM_KEYS.filter((k) => k !== "q" && sp[k]).map((k) => (
+          <input key={k} type="hidden" name={k} value={sp[k]} />
+        ))}
+        <label htmlFor="q" className="sr-only">
+          {t("discover.searchLabel")}
+        </label>
+        <div className="relative flex-1">
+          <SearchIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground-muted" />
+          <input
+            id="q"
+            name="q"
+            type="search"
+            defaultValue={q}
+            maxLength={80}
+            placeholder={t("discover.searchPlaceholder")}
+            className="h-12 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-base text-foreground placeholder:text-foreground-muted"
+          />
+        </div>
+        <button type="submit" className="inline-flex h-12 items-center rounded-full bg-brand px-6 text-sm font-semibold text-white hover:bg-brand-strong">
+          {t("discover.search")}
+        </button>
+      </form>
+
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("discover.quickFilters")}>
+        <Chip href={hrefWith(current, "when", "week")} active={when === "week"}>{t("filter.week")}</Chip>
+        <Chip href={hrefWith(current, "when", "weekend")} active={when === "weekend"}>{t("filter.weekend")}</Chip>
+        <Chip href={hrefWith(current, "cost", "free")} active={cost === "free"}>{t("filter.free")}</Chip>
+        <NearMeButton />
+      </div>
+
+      <details className="group rounded-2xl border border-border bg-surface" open={detailedActive}>
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-semibold text-foreground">
+          <span>
+            {t("filter.more")}
+            <span className="ml-2 hidden font-normal text-foreground-muted sm:inline">{t("filter.moreHint")}</span>
+          </span>
+          <span aria-hidden="true" className="text-foreground-muted transition-transform group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="flex flex-col gap-4 border-t border-border p-4">
+          <FilterRow label={t("filter.category")}>
+            {CATEGORIES.map((c) => (
+              <Chip key={c} href={hrefWith(current, "category", c)} active={category === c}>{t(`category.${c}`)}</Chip>
+            ))}
+          </FilterRow>
+          {facets.areas.length > 1 && (
+            <FilterRow label={t("filter.area")}>
+              {facets.areas.map((a) => (
+                <Chip key={a} href={hrefWith(current, "area", a)} active={area === a}>{t(`area.${a}`)}</Chip>
+              ))}
+            </FilterRow>
           )}
+          <FilterRow label={t("filter.when")}>
+            <Chip href={hrefWith(current, "when", "next-weekend")} active={when === "next-weekend"}>{t("filter.nextWeekend")}</Chip>
+            <Chip href={hrefWith(current, "when", "weekday")} active={when === "weekday"}>{t("filter.weekday")}</Chip>
+          </FilterRow>
+          <FilterRow label={t("filter.cost")}>
+            <Chip href={hrefWith(current, "cost", "paid")} active={cost === "paid"}>{t("filter.paid")}</Chip>
+          </FilterRow>
+          <FilterRow label={t("filter.setting")}>
+            <Chip href={hrefWith(current, "indoor", "indoor")} active={indoor === true}>{t("fact.indoor")}</Chip>
+            <Chip href={hrefWith(current, "indoor", "outdoor")} active={indoor === false}>{t("fact.outdoor")}</Chip>
+          </FilterRow>
+          <FilterRow label={t("filter.eligibility")}>
+            {AGE.map((a) => (
+              <Chip key={a} href={hrefWith(current, "ageEligibility", a)} active={ageEligibility === a}>{t(`age.${a}`)}</Chip>
+            ))}
+          </FilterRow>
+          <FilterRow label={t("filter.difficulty")}>
+            {DIFFICULTY.map((d) => (
+              <Chip key={d} href={hrefWith(current, "difficulty", d)} active={difficulty === d}>{t(`difficulty.${d}`)}</Chip>
+            ))}
+          </FilterRow>
+          {facets.accessibilityTags.length > 0 && (
+            <FilterRow label={t("filter.accessibility")}>
+              {facets.accessibilityTags.map((tag) => (
+                <Chip key={tag} href={toggleInList(current, "accessibility", tag)} active={accessibility.includes(tag)}>
+                  {t(`access.${tag}`)}
+                </Chip>
+              ))}
+            </FilterRow>
+          )}
+          <div>
+            <Link href={hrefWith(current, "past", includePast ? undefined : "1")} scroll={false} className="text-sm font-medium text-brand-strong underline underline-offset-2">
+              {includePast ? t("discover.hidePast") : t("filter.includePast")}
+            </Link>
+          </div>
+        </div>
+      </details>
+
+      {active.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" aria-label={t("filter.active")}>
+          {active.map((f) => (
+            <Link
+              key={f.label}
+              href={f.href}
+              scroll={false}
+              aria-label={t("filter.remove", { name: f.label })}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-tint px-3 py-1 text-sm font-medium text-brand-strong hover:bg-brand-tint/70"
+            >
+              {f.label}
+              <CloseIcon size={14} />
+            </Link>
+          ))}
+          <Link href="/discover" className="text-sm font-medium text-foreground-muted underline underline-offset-2">
+            {t("action.clearAll")}
+          </Link>
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Category
-          </span>
-          {CATEGORIES.map((c) => (
-            <FilterChip
-              key={c.id}
-              href={buildHref(currentParams, "category", c.id)}
-              active={category === c.id}
-              label={c.label}
-            />
-          ))}
-          {category && <ClearLink href={buildHref(currentParams, "category", undefined)} />}
-        </div>
+      <DiscoverExplorer
+        activities={results}
+        initialView={sp.view === "map" ? "map" : "list"}
+        resultsLabel={t("discover.results", { n: results.length })}
+        emptyAction={
+          <Link href="/discover" className="inline-flex min-h-10 items-center rounded-full bg-brand px-5 text-sm font-semibold text-white">
+            {t("action.clearAll")}
+          </Link>
+        }
+      />
 
-        {facets.areas.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by area">
-            <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-              Area
-            </span>
-            {facets.areas.map((a) => (
-              <FilterChip key={a} href={buildHref(currentParams, "area", a)} active={area === a} label={a} />
-            ))}
-            {area && <ClearLink href={buildHref(currentParams, "area", undefined)} />}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by when">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            When
-          </span>
-          <FilterChip href={buildHref(currentParams, "when", "weekday")} active={when === "weekday"} label="Weekday" />
-          <FilterChip href={buildHref(currentParams, "when", "weekend")} active={when === "weekend"} label="Weekend" />
-          {when && <ClearLink href={buildHref(currentParams, "when", undefined)} />}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by cost">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Cost
-          </span>
-          <FilterChip href={buildHref(currentParams, "cost", "free")} active={cost === "free"} label="Free" />
-          <FilterChip href={buildHref(currentParams, "cost", "paid")} active={cost === "paid"} label="Paid" />
-          {cost && <ClearLink href={buildHref(currentParams, "cost", undefined)} />}
-        </div>
-
-        <details className="group rounded-2xl border border-border bg-surface p-3" open={Boolean(resolved.indoor || resolved.ageEligibility || resolved.difficulty || resolved.accessibility)}>
-          <summary className="cursor-pointer text-sm font-semibold text-foreground">More filters (setting, eligibility, difficulty, accessibility)</summary>
-          <div className="mt-3 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by setting">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Setting
-          </span>
-          <FilterChip href={buildHref(currentParams, "indoor", "indoor")} active={indoor === true} label="Indoor" />
-          <FilterChip href={buildHref(currentParams, "indoor", "outdoor")} active={indoor === false} label="Outdoor" />
-          {resolved.indoor && <ClearLink href={buildHref(currentParams, "indoor", undefined)} />}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by age eligibility">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Eligibility
-          </span>
-          {AGE_ELIGIBILITY.map((a) => (
-            <FilterChip
-              key={a.id}
-              href={buildHref(currentParams, "ageEligibility", a.id)}
-              active={ageEligibility === a.id}
-              label={a.label}
-            />
-          ))}
-          {ageEligibility && <ClearLink href={buildHref(currentParams, "ageEligibility", undefined)} />}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by difficulty">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Difficulty
-          </span>
-          {DIFFICULTIES.map((d) => (
-            <FilterChip
-              key={d.id}
-              href={buildHref(currentParams, "difficulty", d.id)}
-              active={difficulty === d.id}
-              label={d.label}
-            />
-          ))}
-          {difficulty && <ClearLink href={buildHref(currentParams, "difficulty", undefined)} />}
-        </div>
-
-        {facets.accessibilityTags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by accessibility">
-            <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-              Accessibility
-            </span>
-            {facets.accessibilityTags.map((tag) => (
-              <FilterChip
-                key={tag}
-                href={toggleInList(currentParams, "accessibility", tag)}
-                active={accessibility.includes(tag)}
-                label={tag.replace(/-/g, " ")}
-              />
-            ))}
-          </div>
-        )}
-
-          </div>
-        </details>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Distance
-          </span>
-          <NearMeButton />
-        </div>
-      </div>
-
-      {(hiddenPastCount > 0 || includePast) && (
+      {hiddenPast > 0 && !includePast && (
         <p className="text-sm text-foreground-muted">
-          {includePast ? "Including activities that already happened. " : `${hiddenPastCount} activit${hiddenPastCount === 1 ? "y" : "ies"} that already happened are hidden. `}
-          <Link href={buildHref(currentParams, "past", includePast ? undefined : "1")} className="font-semibold text-brand-strong underline underline-offset-2">
-            {includePast ? "Hide past activities" : "Show them"}
+          {t("discover.pastHidden", { n: hiddenPast })}{" "}
+          <Link href={hrefWith(current, "past", "1")} scroll={false} className="font-semibold text-brand-strong underline underline-offset-2">
+            {t("discover.showPast")}
           </Link>
         </p>
       )}
-
-      <DiscoverExplorer activities={filtered} initialView={resolved.view === "map" ? "map" : "list"} />
     </div>
   );
 }
 
-function FilterChip({ href, active, label }: { href: string; active: boolean; label: string }) {
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
-        active
-          ? "border-brand bg-brand text-white"
-          : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function ClearLink({ href }: { href: string }) {
-  return (
-    <Link href={href} className="rounded-full border border-transparent px-2 py-1 text-xs text-foreground-muted underline underline-offset-2">
-      Clear
-    </Link>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+      <span className="w-28 shrink-0 text-xs font-semibold uppercase tracking-wide text-foreground-muted">{label}</span>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
   );
 }

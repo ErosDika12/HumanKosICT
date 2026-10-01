@@ -1,8 +1,9 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { BridgeNetworkGraph } from "@/components/BridgeNetworkGraph";
 import { BridgeStory } from "@/components/BridgeStory";
-import { DemoBadge } from "@/components/DemoBadge";
-import { Card, EmptyState, Eyebrow, PageShell, Pill } from "@/components/ui";
+import { Card, EmptyState, PageShell, Pill } from "@/components/ui";
+import { ArrowIcon } from "@/components/icons";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getBridgeGraph,
@@ -11,23 +12,20 @@ import {
   listBridgeProposals,
   ensureBridgeProposals,
 } from "@/lib/data/bridge";
+import { pickStrongMatches } from "@/lib/data/bridge-picks";
+import { getI18n } from "@/lib/i18n/server";
+import { areaFromSq } from "@/lib/i18n/areas";
+import { localizeText } from "@/lib/i18n/content";
 
-const STATUS_LABEL: Record<string, string> = {
-  suggested: "Suggested",
-  saved: "Under review",
-  accepted: "Accepted",
-  declined: "Declined",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("nav.bridge") };
+}
+
 const STATUS_TONE = { suggested: "neutral", saved: "brand", accepted: "success", declined: "neutral" } as const;
 
-const HOW_IT_WORKS = [
-  { n: "1", title: "A neighbor raises a need", body: "Residents post what is missing in their area and others back it with one click." },
-  { n: "2", title: "BRIDGE matches two communities", body: "A documented formula pairs communities that can act together on that need — and shows every reason." },
-  { n: "3", title: "Organizers decide, everyone helps", body: "Only a human organizer accepts. Then a project opens, volunteers join, and a first session is scheduled." },
-];
-
-export default async function BridgePage({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
-  const { all } = await searchParams;
+export default async function BridgePage() {
+  const { t, locale } = await getI18n();
   await ensureBridgeProposals();
   const user = await getCurrentUser();
   const featuredId = await getFeaturedBridgeId();
@@ -36,104 +34,70 @@ export default async function BridgePage({ searchParams }: { searchParams: Promi
     listBridgeProposals(),
     getBridgeGraph(),
   ]);
-  const others = proposals.filter((p) => p.id !== featuredId);
-  const visible = all ? others : others.slice(0, 5);
+  const featuredSummary = proposals.find((p) => p.id === featuredId);
+  const strong = pickStrongMatches(proposals, featuredSummary);
 
   return (
     <PageShell>
-      <header className="flex flex-col gap-4">
-        <DemoBadge className="self-start" />
-        <div className="flex flex-col gap-2">
-          <Eyebrow>BRIDGE · communities working together</Eyebrow>
-          <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Two communities. One shared need. One plan.
-          </h1>
-          <p className="max-w-3xl text-base text-foreground-muted">
-            BRIDGE turns a neighborhood need into a concrete collaboration between two real communities. Below is a
-            seeded example you can click through — every number comes from stored records, and every step explains why.
-          </p>
-        </div>
-        <ol className="grid gap-3 sm:grid-cols-3">
-          {HOW_IT_WORKS.map((s) => (
-            <li key={s.n} className="flex gap-3 rounded-2xl border border-border bg-surface p-4">
-              <span
-                aria-hidden="true"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white"
-              >
-                {s.n}
-              </span>
-              <div>
-                <p className="font-display font-semibold text-foreground">{s.title}</p>
-                <p className="text-sm text-foreground-muted">{s.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      <header className="flex flex-col gap-2">
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{t("bridge.headline")}</h1>
+        <p className="max-w-3xl text-base text-foreground-muted">{t("bridge.lead")}</p>
       </header>
 
       {featured ? (
         <section aria-labelledby="featured-bridge" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone="accent">Featured example</Pill>
+            <Pill tone="accent">{t("bridge.featured")}</Pill>
             <h2 id="featured-bridge" className="font-display text-2xl font-semibold text-foreground">
               {featured.communityA.name} × {featured.communityB.name}
             </h2>
-            <Pill tone={STATUS_TONE[featured.status]}>{STATUS_LABEL[featured.status]}</Pill>
+            <Pill tone={STATUS_TONE[featured.status]}>{t(`bridge.status.${featured.status}`)}</Pill>
           </div>
           <BridgeStory showcase={featured} signedIn={Boolean(user)} />
-          <Link href={`/bridge/${featured.id}`} className="w-fit text-sm font-medium text-brand-strong underline underline-offset-2">
-            Open the full proposal →
+          <Link href={`/bridge/${featured.id}`} className="inline-flex w-fit items-center gap-1 text-sm font-medium text-brand-strong underline underline-offset-2">
+            {t("bridge.full")}
+            <ArrowIcon size={14} />
           </Link>
         </section>
       ) : (
-        <EmptyState title="No BRIDGE proposals right now">
-          No open community need and published community pair currently scores high enough. See{" "}
+        <EmptyState title={t("bridge.empty.title")}>
+          {t("bridge.empty.body")}{" "}
           <Link href="/needs" className="underline">
-            community needs
+            {t("nav.needs")}
           </Link>
-          .
         </EmptyState>
       )}
 
-      {others.length > 0 && (
+      {strong.length > 0 && (
         <section aria-labelledby="more-bridge" className="flex flex-col gap-3">
-          <h2 id="more-bridge" className="font-display text-2xl font-semibold text-foreground">
-            More matches BRIDGE found
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {visible.map((p) => (
-              <li key={p.id}>
-                <Card className="h-full p-4 transition-shadow hover:shadow-md">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="font-display text-lg font-semibold text-foreground">
-                      <Link href={`/bridge/${p.id}`} className="hover:underline">
-                        {p.communityAName} × {p.communityBName}
-                      </Link>
-                    </h3>
-                    <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
-                  </div>
-                  <p className="mt-2 text-sm text-foreground-muted">
-                    Need in {p.needAreaSq}: &ldquo;{p.needDescription}&rdquo;
-                  </p>
-                  <Link href={`/bridge/${p.id}`} className="mt-3 inline-block text-sm font-semibold text-brand-strong hover:underline">
-                    Explore this match →
+          <div>
+            <h2 id="more-bridge" className="font-display text-2xl font-semibold text-foreground">
+              {t("bridge.more.title")}
+            </h2>
+            <p className="text-sm text-foreground-muted">{t("bridge.more.lead")}</p>
+          </div>
+          <ul className="grid gap-4 md:grid-cols-3">
+            {strong.map((p) => (
+              <li key={p.id} className="flex">
+                <Card className="flex w-full flex-col gap-2 p-4 transition-shadow hover:shadow-md">
+                  <h3 className="font-display text-lg font-semibold text-foreground">
+                    {p.communityAName} × {p.communityBName}
+                  </h3>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">{t("bridge.more.needIn", { area: areaFromSq(p.needAreaSq, t) })}</p>
+                  <p className="text-sm text-foreground-muted">“{localizeText(p.needDescription, locale)}”</p>
+                  <Link href={`/bridge/${p.id}`} className="mt-auto inline-flex items-center gap-1 pt-1 text-sm font-semibold text-brand-strong hover:underline">
+                    {t("bridge.more.explore")}
+                    <ArrowIcon size={14} />
                   </Link>
                 </Card>
               </li>
             ))}
           </ul>
-          {!all && others.length > visible.length && (
-            <Link href="/bridge?all=1" className="w-fit text-sm font-medium text-brand-strong underline underline-offset-2">
-              Show all {others.length} other matches
-            </Link>
-          )}
         </section>
       )}
 
       <details className="rounded-2xl border border-border bg-surface p-4">
-        <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
-          See the network view
-        </summary>
+        <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">{t("bridge.network")}</summary>
         <div className="mt-4">
           <BridgeNetworkGraph graph={graph} />
         </div>

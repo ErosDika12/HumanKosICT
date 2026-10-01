@@ -12,6 +12,8 @@ export interface ThreadSummary {
   lastBody: string;
   lastAt: Date;
   lastIsMine: boolean;
+  /** The latest line is a seeded demo example (so it may be shown in the visitor's language). */
+  lastIsSeeded: boolean;
   unread: number;
   hasSeededExample: boolean;
 }
@@ -85,6 +87,7 @@ export async function listThreads(viewerId: string): Promise<ThreadSummary[]> {
         lastBody: m.body,
         lastAt: m.createdAt,
         lastIsMine: mine,
+        lastIsSeeded: m.isSeededExample,
         unread: 0,
         hasSeededExample: false,
       };

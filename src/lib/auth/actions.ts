@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "./password";
@@ -29,12 +30,12 @@ export async function loginAction(formData: FormData): Promise<void> {
   const safeNext = next.startsWith("/") ? next : "/discover";
 
   if (!email || !password) {
-    redirect(`/login?error=${encodeURIComponent("Enter your email and password.")}&next=${encodeURIComponent(safeNext)}`);
+    redirect(`/login?error=${errorParam("Enter your email and password.")}&next=${encodeURIComponent(safeNext)}`);
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    redirect(`/login?error=${encodeURIComponent("Invalid email or password.")}&next=${encodeURIComponent(safeNext)}`);
+    redirect(`/login?error=${errorParam("Invalid email or password.")}&next=${encodeURIComponent(safeNext)}`);
   }
 
   await setSessionCookie(user.id, user.role);
@@ -77,10 +78,10 @@ export async function demoLoginAction(): Promise<void> {
     visitor = await createDemoVisitor();
   } catch (err) {
     if (err instanceof DemoLoginUnavailableError) {
-      redirect(`/login?error=${encodeURIComponent(err.message)}`);
+      redirect(`/login?error=${errorParam(err.message)}`);
     }
     throw err;
   }
   await setSessionCookie(visitor.id, visitor.role);
-  redirect("/discover?welcome=1");
+  redirect("/");
 }

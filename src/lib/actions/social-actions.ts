@@ -8,6 +8,7 @@ import { respondToInvite, sendInvite } from "@/lib/data/invites";
 import { sendMessage } from "@/lib/data/messages";
 import { ValidationError } from "@/lib/validation";
 import { RsvpError } from "@/lib/data/rsvp";
+import { errorCodeOf } from "@/lib/i18n/errors";
 
 /** Only same-site paths may be used as a return target. */
 function safeReturn(raw: FormDataEntryValue | null, fallback: string): string {
@@ -27,7 +28,7 @@ async function run(returnTo: string, fn: () => Promise<void>, okKey?: string): P
     await fn();
   } catch (err) {
     if (err instanceof SocialError || err instanceof ValidationError || err instanceof RsvpError) {
-      redirect(withParam(returnTo, "error", err.message));
+      redirect(withParam(returnTo, "error", errorCodeOf(err)));
     }
     throw err;
   }

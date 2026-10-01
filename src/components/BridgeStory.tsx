@@ -1,239 +1,200 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import type { BridgeShowcase } from "@/lib/data/bridge";
 import { joinProjectAction } from "@/lib/actions/project-actions";
 import { demoLoginAction } from "@/lib/auth/actions";
-import { buttonClass, Pill } from "@/components/ui";
-
-const STATE_LABEL = { done: "Done", current: "Now", upcoming: "Next", blocked: "Stopped" } as const;
-
-function titleCase(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+import { buttonClass } from "@/components/ui";
+import { CheckIcon, PinIcon } from "@/components/icons";
+import { getI18n } from "@/lib/i18n/server";
+import { areaFromSq } from "@/lib/i18n/areas";
+import { localizeActivity, localizeText } from "@/lib/i18n/content";
+import { localizeBridgeReasons, localizeBridgeText } from "@/lib/i18n/bridge-text";
+import { ACTIVITIES } from "@/lib/demo-data";
 
 /**
- * The BRIDGE story as a stepper you can click through: need -> match ->
- * decision -> project -> first session. Each step shows the real stored
- * facts behind it and, where an action exists, the button to take it.
- * Purely a view over `BridgeShowcase` — nothing here invents progress.
+ * The BRIDGE story as one readable column: need → two communities → project →
+ * first joint session, then HOW the project meets the need, then one obvious
+ * next action. Purely a view over `BridgeShowcase` — nothing here invents
+ * progress, and every label comes from the visitor's language.
  */
-export function BridgeStory({ showcase, signedIn }: { showcase: BridgeShowcase; signedIn: boolean }) {
-  const currentIndex = Math.max(0, showcase.stages.findIndex((s) => s.state === "current"));
-  const [selected, setSelected] = useState(currentIndex);
-  const stage = showcase.stages[selected];
-  const { communityA, communityB, need, project, kickoff } = showcase;
-  const reasons = showcase.reason.split(";").map((r) => r.trim()).filter(Boolean);
+export async function BridgeStory({ showcase, signedIn }: { showcase: BridgeShowcase; signedIn: boolean }) {
+  const { t, locale, shortDate } = await getI18n();
+  const { communityA, communityB, need, project, kickoff, stages } = showcase;
+
+  const stateOf = (key: string) => stages.find((s) => s.key === key)?.state ?? "upcoming";
+  const kickoffTitle = kickoff
+    ? (() => {
+        const seeded = ACTIVITIES.find((a) => a.slug === kickoff.slug);
+        return seeded ? localizeActivity(seeded, locale).title : kickoff.title;
+      })()
+    : "";
+  const reasons = localizeBridgeReasons(showcase.reason, t, locale);
+  const decisionKey = showcase.status;
+
+  const steps: { key: string; title: string; state: string; body: React.ReactNode }[] = [
+    {
+      key: "need",
+      title: t("bridge.step.need"),
+      state: stateOf("need"),
+      body: (
+        <>
+          <blockquote className="border-l-4 border-accent pl-3 font-display text-base text-foreground">“{localizeText(need.description, locale)}”</blockquote>
+          <p className="mt-2 text-sm text-foreground-muted">
+            <span className="inline-flex items-center gap-1">
+              <PinIcon size={14} />
+              {areaFromSq(need.areaSq, t)}
+            </span>{" "}
+            · {t("bridge.step.need.detail", { n: need.supporters })}
+          </p>
+        </>
+      ),
+    },
+    {
+      key: "match",
+      title: t("bridge.step.match"),
+      state: stateOf("match"),
+      body: (
+        <>
+          <p className="text-base">
+            <Link href={`/communities/${communityA.slug}`} className="font-semibold text-brand-strong hover:underline">
+              {communityA.name}
+            </Link>{" "}
+            <span className="text-accent-strong">×</span>{" "}
+            <Link href={`/communities/${communityB.slug}`} className="font-semibold text-brand-strong hover:underline">
+              {communityB.name}
+            </Link>
+          </p>
+          <details className="mt-2 text-sm text-foreground-muted">
+            <summary className="cursor-pointer font-medium text-foreground">{t("bridge.why")}</summary>
+            <ul className="mt-1 list-disc space-y-0.5 pl-5">
+              {reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs">{t("bridge.formula")}</p>
+          </details>
+        </>
+      ),
+    },
+    {
+      key: "project",
+      title: t("bridge.step.project"),
+      state: stateOf("project"),
+      body: project ? (
+        <>
+          <p className="text-sm text-foreground-muted">{t("bridge.volunteers", { n: project.volunteerCount, total: project.volunteersNeeded })}</p>
+          <div
+            className="mt-1 h-2 overflow-hidden rounded-full bg-surface-muted"
+            role="progressbar"
+            aria-label={t("bridge.volunteersAria")}
+            aria-valuemin={0}
+            aria-valuemax={project.volunteersNeeded}
+            aria-valuenow={Math.min(project.volunteerCount, project.volunteersNeeded)}
+          >
+            <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (project.volunteerCount / project.volunteersNeeded) * 100)}%` }} />
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-foreground-muted">{t("bridge.step.project.none")}</p>
+      ),
+    },
+    {
+      key: "session",
+      title: t("bridge.step.session"),
+      state: stateOf("session"),
+      body: kickoff ? (
+        <p className="text-sm text-foreground-muted">
+          <span className="font-medium text-foreground">{kickoffTitle}</span> · {shortDate(kickoff.date)} · {kickoff.startTime}
+        </p>
+      ) : (
+        <p className="text-sm text-foreground-muted">{t("bridge.step.session.none")}</p>
+      ),
+    },
+  ];
+
+  // The primary action follows the stored state: join → RSVP → plan.
+  const nextKind = showcase.nextStep.kind;
 
   return (
-    <div className="flex flex-col gap-5">
-      <ol className="grid gap-2 sm:grid-cols-5" aria-label="BRIDGE progress">
-        {showcase.stages.map((s, i) => {
-          const isSelected = i === selected;
-          return (
-            <li key={s.key}>
-              <button
-                type="button"
-                onClick={() => setSelected(i)}
-                aria-pressed={isSelected}
-                aria-current={s.state === "current" ? "step" : undefined}
-                className={`flex h-full w-full flex-row items-start gap-3 rounded-2xl border p-3 text-left transition-colors sm:flex-col ${
-                  isSelected ? "border-brand bg-brand-tint" : "border-border bg-surface hover:bg-surface-muted"
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    s.state === "done"
-                      ? "bg-success text-white"
-                      : s.state === "current"
-                        ? "bg-accent text-[#1c1b1a]"
-                        : s.state === "blocked"
-                          ? "bg-danger text-white"
-                          : "border border-border bg-surface-muted text-foreground-muted"
-                  }`}
-                >
-                  {s.state === "done" ? "✓" : i + 1}
-                </span>
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-foreground">{s.label}</span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-foreground-muted">
-                    {STATE_LABEL[s.state]}
-                  </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
+    <div className="flex flex-col gap-6">
+      <ol className="grid gap-4 md:grid-cols-2" aria-label={t("bridge.story.label")}>
+        {steps.map((s, i) => (
+          <li key={s.key} className="flex gap-3 rounded-2xl border border-border bg-surface p-4">
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                s.state === "done" ? "bg-success text-white" : s.state === "current" ? "bg-accent text-[#1c1b1a]" : "bg-surface-muted text-foreground-muted"
+              }`}
+            >
+              {s.state === "done" ? <CheckIcon size={16} /> : i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="flex flex-wrap items-center gap-2 font-display text-base font-semibold text-foreground">
+                {s.title}
+                <span className="text-[11px] font-medium uppercase tracking-wide text-foreground-muted">{t(`bridge.state.${s.state}`)}</span>
+              </h3>
+              <div className="mt-1">{s.body}</div>
+            </div>
+          </li>
+        ))}
       </ol>
 
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm" aria-live="polite">
-        <div className="flex flex-wrap items-center gap-2">
-          <Pill tone={stage.state === "done" ? "success" : stage.state === "current" ? "accent" : "neutral"}>
-            Step {selected + 1} · {stage.label}
-          </Pill>
-          <span className="text-sm text-foreground-muted">{stage.detail}</span>
-        </div>
-
-        {stage.key === "need" && (
-          <div className="mt-4 flex flex-col gap-2">
-            <blockquote className="border-l-4 border-accent pl-4 font-display text-lg text-foreground">
-              &ldquo;{need.description}&rdquo;
-            </blockquote>
-            <p className="text-sm text-foreground-muted">
-              Raised in {need.areaSq} · {titleCase(need.category)} · supported by {need.supporters}{" "}
-              {need.supporters === 1 ? "person" : "people"}.
-            </p>
-            <Link href="/needs" className={buttonClass("secondary", "sm", "w-fit")}>
-              See all community needs
-            </Link>
-          </div>
+      <section className="rounded-2xl border border-brand/40 bg-brand-tint p-5" aria-labelledby="helps-title">
+        <h3 id="helps-title" className="font-display text-lg font-semibold text-brand-strong">
+          {t("bridge.helps.title")}
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-foreground">{localizeBridgeText(showcase.mutualBenefit, t, locale)}</p>
+        {kickoff && (
+          <p className="mt-2 text-sm text-foreground-muted">
+            {t("bridge.helps.firstSession")}: <span className="font-medium text-foreground">{kickoffTitle}</span> · {shortDate(kickoff.date)}
+          </p>
         )}
+      </section>
 
-        {stage.key === "match" && (
-          <div className="mt-4 flex flex-col gap-4">
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-              {[communityA, communityB].map((c, i) => (
-                <div key={c.slug} className={i === 1 ? "sm:order-3" : ""}>
-                  <Link
-                    href={`/communities/${c.slug}`}
-                    className="flex flex-col gap-1 rounded-xl border border-border bg-background p-3 hover:bg-surface-muted"
-                  >
-                    <span className="font-display font-semibold text-foreground">{c.name}</span>
-                    <span className="text-xs text-foreground-muted">
-                      {titleCase(c.category)} · {c.areaSq}
-                    </span>
-                  </Link>
-                </div>
-              ))}
-              <span aria-hidden="true" className="text-center font-display text-2xl text-accent-strong sm:order-2">
-                ×
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Why BRIDGE matched them</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-foreground-muted">
-                {reasons.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-foreground-muted">
-                The match uses a documented, deterministic formula — never an opaque AI score.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {stage.key === "decision" && (
-          <div className="mt-4 grid gap-3 text-sm text-foreground-muted sm:grid-cols-2">
-            <div>
-              <p className="font-semibold text-foreground">Mutual benefit</p>
-              <p>{showcase.mutualBenefit}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">Resources needed</p>
-              <p>{showcase.requiredResources}</p>
-            </div>
-            <p className="sm:col-span-2">
-              Only an organizer of {communityA.name} or {communityB.name} can accept, edit or decline a proposal.
-            </p>
-            <Link href={`/bridge/${showcase.id}`} className={buttonClass("secondary", "sm", "w-fit")}>
-              Open the full proposal
-            </Link>
-          </div>
-        )}
-
-        {stage.key === "project" && (
-          <div className="mt-4 flex flex-col gap-3">
-            {project ? (
-              <>
-                <p className="font-display text-lg font-semibold text-foreground">{project.title}</p>
-                <div>
-                  <div
-                    className="h-2.5 overflow-hidden rounded-full bg-surface-muted"
-                    role="progressbar"
-                    aria-label="Volunteers joined"
-                    aria-valuemin={0}
-                    aria-valuemax={project.volunteersNeeded}
-                    aria-valuenow={Math.min(project.volunteerCount, project.volunteersNeeded)}
-                  >
-                    <div
-                      className="h-full rounded-full bg-success"
-                      style={{ width: `${Math.min(100, (project.volunteerCount / project.volunteersNeeded) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-sm text-foreground-muted">
-                    {project.volunteerCount} of {project.volunteersNeeded} volunteers joined
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {!signedIn ? (
-                    <form action={demoLoginAction}>
-                      <button type="submit" className={buttonClass("accent", "md")}>
-                        Log in as demo to join
-                      </button>
-                    </form>
-                  ) : project.viewerIsVolunteer ? (
-                    <span className="inline-flex items-center rounded-full bg-success-tint px-4 py-2 text-sm font-semibold text-success">
-                      ✓ You joined this project
-                    </span>
-                  ) : (
-                    <form action={joinProjectAction}>
-                      <input type="hidden" name="projectId" value={project.id} />
-                      <button type="submit" className={buttonClass("primary", "md")}>
-                        Join the project
-                      </button>
-                    </form>
-                  )}
-                  <Link href={`/projects/${project.slug}`} className={buttonClass("secondary", "md")}>
-                    View project
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-foreground-muted">
-                A project is created when an organizer accepts the proposal — nothing starts automatically.
-              </p>
-            )}
-          </div>
-        )}
-
-        {stage.key === "session" && (
-          <div className="mt-4 flex flex-col gap-3">
-            {kickoff ? (
-              <>
-                <p className="font-display text-lg font-semibold text-foreground">{kickoff.title}</p>
-                <p className="text-sm text-foreground-muted">
-                  {kickoff.date} · {kickoff.startTime} · {kickoff.venueName}
-                  {!kickoff.isPast && ` · ${kickoff.spotsLeft} spots left`}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/discover/${kickoff.slug}`} className={buttonClass(kickoff.viewerHasRsvp ? "secondary" : "primary", "md")}>
-                    {kickoff.viewerHasRsvp ? "✓ You are going — view session" : "View session & RSVP"}
-                  </Link>
-                  {kickoff.viewerHasRsvp && (
-                    <Link href="/plans" className={buttonClass("secondary", "md")}>
-                      View plan
-                    </Link>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-foreground-muted">No joint session is scheduled yet.</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/50 bg-accent-tint p-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-accent/50 bg-accent-tint p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex max-w-xl flex-col gap-0.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-accent-strong">Your next step</span>
-          <span className="text-sm text-foreground">{showcase.nextStep.description}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-accent-strong">{t("bridge.next.label")}</span>
+          <span className="text-sm text-foreground">
+            {nextKind === "review"
+              ? t("bridge.next.review.desc", { a: communityA.name, b: communityB.name })
+              : nextKind === "join-project"
+                ? t("bridge.next.join.desc")
+                : nextKind === "rsvp-kickoff"
+                  ? t("bridge.next.rsvp.desc", { title: kickoffTitle })
+                  : nextKind === "view-plan"
+                    ? t("bridge.next.plan.desc")
+                    : t("bridge.next.explore.desc")}
+          </span>
         </div>
-        <Link href={showcase.nextStep.href} className={buttonClass("primary", "md")}>
-          {showcase.nextStep.label}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {project && !signedIn && (
+            <form action={demoLoginAction}>
+              <button type="submit" className={buttonClass("accent", "md")}>
+                {t("bridge.loginToJoin")}
+              </button>
+            </form>
+          )}
+          {project && signedIn && !project.viewerIsVolunteer && decisionKey === "accepted" && (
+            <form action={joinProjectAction}>
+              <input type="hidden" name="projectId" value={project.id} />
+              <button type="submit" className={buttonClass("primary", "md")}>
+                {t("action.joinProject")}
+              </button>
+            </form>
+          )}
+          {project && project.viewerIsVolunteer && (
+            <span className="inline-flex items-center rounded-full bg-success-tint px-4 py-2 text-sm font-semibold text-success">{t("bridge.joined")}</span>
+          )}
+          {kickoff && (
+            <Link href={`/discover/${kickoff.slug}`} className={buttonClass(kickoff.viewerHasRsvp ? "secondary" : "primary", "md")}>
+              {kickoff.viewerHasRsvp ? t("bridge.goingSession") : t("bridge.rsvpSession")}
+            </Link>
+          )}
+          {project && (
+            <Link href={`/projects/${project.slug}`} className={buttonClass("secondary", "md")}>
+              {t("bridge.viewProject")}
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

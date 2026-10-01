@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
 import { createRsvp, cancelRsvp, RsvpError } from "@/lib/data/rsvp";
@@ -30,7 +31,7 @@ export async function rsvpAction(formData: FormData): Promise<void> {
     await createRsvp(user.id, activityId);
   } catch (err) {
     const message = err instanceof RsvpError ? err.message : "Could not complete RSVP.";
-    redirect(`${path}?rsvpError=${encodeURIComponent(message)}`);
+    redirect(`${path}?rsvpError=${errorParam(message)}`);
   }
 
   revalidatePath("/", "layout");
@@ -63,7 +64,7 @@ export async function reportActivityAction(formData: FormData): Promise<void> {
     await fileReport(user.id, activityId, reason);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not file the report.";
-    redirect(`${path}?reportError=${encodeURIComponent(message)}`);
+    redirect(`${path}?reportError=${errorParam(message)}`);
   }
   redirect(`${path}?reported=1`);
 }

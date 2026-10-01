@@ -284,14 +284,8 @@ async function activitiesAnswer(args: {
     if (constraints[key] === undefined) continue;
     const alternatives = scoreActivities(open.filter((a) => satisfies(a, constraints, [key])), { interestIds }).slice(0, 2);
     if (alternatives.length === 0) continue;
-    const label =
-      key === "window"
-        ? "doesn't fall in the time you asked for"
-        : key === "area"
-          ? "isn't in the area you asked for"
-          : `isn't ${constraints.cost === "free" ? "free" : "paid"}`;
     return {
-      text: `Nothing matches everything you asked for${filterText}. The closest alternative${alternatives.length === 1 ? "" : "s"} below keep${alternatives.length === 1 ? "s" : ""} your other requirements but ${label}.`,
+      text: `Nothing matches everything you asked for${filterText}. Below ${alternatives.length === 1 ? "is the closest alternative" : "are the closest alternatives"}: ${alternatives.length === 1 ? "it keeps" : "they keep"} your other requirements but ${alternatives.length === 1 ? "does" : "do"} not match ${unmet(key)} you asked for.`,
       cards: alternatives.map((a) =>
         toActivityCard(a, [`Alternative — not a match on ${unmet(key)}`, ...(a.matchReasons ?? [])], going, Boolean(viewerId))
       ),

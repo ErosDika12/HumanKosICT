@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { isSimulatedPast } from "@/lib/simulated-clock";
+import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
 import { assertBoundedText, MAX_SHORT_TEXT } from "@/lib/validation";
 import { decideSimulatedReply } from "@/lib/demo-social";
 import { areFriends, SocialError } from "./friends";
@@ -226,6 +226,13 @@ export async function getPlan(viewerId: string, activityId: string): Promise<Pla
 /** Pending invitations addressed to the viewer (e.g. the seeded one from Arta). */
 export async function countPendingInvitesForViewer(viewerId: string): Promise<number> {
   return prisma.activityInvite.count({ where: { toUserId: viewerId, status: "PENDING" } });
+}
+
+/** Upcoming activities the viewer is going to (confirmed RSVP, not canceled, on/after the simulated today). Drives the Plans badge. */
+export async function countUpcomingPlans(viewerId: string): Promise<number> {
+  return prisma.rsvp.count({
+    where: { userId: viewerId, status: "CONFIRMED", activity: { status: "PUBLISHED", date: { gte: SIMULATED_NOW_ISO } } },
+  });
 }
 
 /** The viewer's own invitations for one activity (who they invited, and each status). */

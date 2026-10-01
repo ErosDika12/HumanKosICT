@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { errorParam } from "@/lib/i18n/errors";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/current-user";
 import {
@@ -66,7 +67,7 @@ export async function createCommunityAction(formData: FormData): Promise<void> {
     slug = await createCommunity(user.id, input);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not create community.";
-    redirect(`/communities/new?error=${encodeURIComponent(message)}`);
+    redirect(`/communities/new?error=${errorParam(message)}`);
   }
   redirect(`/communities/${slug}?created=1`);
 }

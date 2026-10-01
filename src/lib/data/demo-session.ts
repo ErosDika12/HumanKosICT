@@ -35,9 +35,25 @@ export function isDemoLoginEnabled(): boolean {
   return process.env.DEMO_LOGIN_DISABLED !== "1";
 }
 
+let lastPurgeAt = 0;
+const PURGE_INTERVAL_MS = 5 * 60_000;
+
+/** Test hook: lets a test observe the next sweep immediately. */
+export function resetDemoPurgeThrottle(): void {
+  lastPurgeAt = 0;
+}
+
 async function purgeExpiredVisitors(): Promise<void> {
+  // Expiry is hours-scale, so sweeping on every login is wasted load — and a
+  // failed sweep must never block a visitor from getting in.
+  if (Date.now() - lastPurgeAt < PURGE_INTERVAL_MS) return;
+  lastPurgeAt = Date.now();
   const cutoff = new Date(Date.now() - DEMO_VISITOR_TTL_HOURS * 3600_000);
-  await prisma.user.deleteMany({ where: { isDemoVisitor: true, createdAt: { lt: cutoff } } });
+  try {
+    await prisma.user.deleteMany({ where: { isDemoVisitor: true, createdAt: { lt: cutoff } } });
+  } catch (err) {
+    console.error("demo visitor purge failed", err);
+  }
 }
 
 export async function createDemoVisitor(): Promise<{ id: string; role: "MEMBER" }> {

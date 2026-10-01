@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/prisma";
-import { createDemoVisitor, getJourneyProgress } from "@/lib/data/demo-session";
+import { createDemoVisitor, getJourneyProgress, resetDemoPurgeThrottle } from "@/lib/data/demo-session";
 import {
   addDemoFriend,
   listFriends,
@@ -78,6 +78,7 @@ describe("One-click demo visitor — isolated, ordinary member", () => {
   it("purges expired visitors (cascade) the next time a visitor is created", async () => {
     const old = await createDemoVisitor();
     await prisma.user.update({ where: { id: old.id }, data: { createdAt: new Date(Date.now() - 48 * 3600_000) } });
+    resetDemoPurgeThrottle();
     await createDemoVisitor();
     assert.equal(await prisma.user.findUnique({ where: { id: old.id } }), null);
     assert.equal(await prisma.friendship.count({ where: { userId: old.id } }), 0);
@@ -197,5 +198,16 @@ describe("Assistant usage limits", () => {
       delete process.env.ASSISTANT_DAILY_LIMIT;
       delete process.env.ASSISTANT_AI_DAILY_LIMIT;
     }
+  });
+});
+
+describe("runtime database connection", () => {
+  it("moves the Supabase session pooler to transaction mode unless opted out", async () => {
+    const { runtimeConnectionString } = await import("@/lib/prisma");
+    const session = "postgresql://postgres.abc:pw@aws-0-eu-central-1.pooler.supabase.com:5432/postgres";
+    assert.equal(new URL(runtimeConnectionString(session, {})).port, "6543");
+    assert.equal(runtimeConnectionString(session, { DATABASE_POOL_MODE: "session" }), session);
+    const other = "postgresql://u:p@db.example.com:5432/app";
+    assert.equal(runtimeConnectionString(other, {}), other);
   });
 });

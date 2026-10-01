@@ -19,6 +19,28 @@ import { pgSslOptions } from "@/lib/db-ssl";
  */
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
+/**
+ * Supabase's pooler listens on 5432 in SESSION mode (one upstream connection
+ * per client, hard-capped at pool_size — "EMAXCONNSESSION" in production logs)
+ * and on 6543 in TRANSACTION mode (connections are shared between clients).
+ * Serverless instances multiply clients, so the runtime uses transaction mode.
+ * Migrations and seeding still use DATABASE_URL as given (see
+ * prisma.production.config.ts). Set DATABASE_POOL_MODE=session to opt out.
+ */
+export function runtimeConnectionString(url: string, env: Record<string, string | undefined> = process.env): string {
+  if (env.DATABASE_POOL_MODE === "session") return url;
+  try {
+    const parsed = new URL(url);
+    if (/\.pooler\.supabase\.com$/.test(parsed.hostname) && (parsed.port === "" || parsed.port === "5432")) {
+      parsed.port = "6543";
+      return parsed.toString();
+    }
+  } catch {
+    // fall through to the original string; the driver reports the real error
+  }
+  return url;
+}
+
 function createClient() {
   const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
   const logLevels = (process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"]) as
@@ -26,12 +48,14 @@ function createClient() {
     | ["error"];
 
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+    const connectionString = runtimeConnectionString(url);
     const adapter = new PrismaPg({
-      connectionString: url,
-      ssl: pgSslOptions(url),
+      connectionString,
+      ssl: pgSslOptions(connectionString),
       // Small pool per serverless instance — the pooler in front of Postgres has a limited client budget.
-      max: Number(process.env.DATABASE_POOL_MAX) || 4,
-      idleTimeoutMillis: 10_000,
+      max: Number(process.env.DATABASE_POOL_MAX) || 3,
+      idleTimeoutMillis: 5_000,
+      connectionTimeoutMillis: 8_000,
     });
     const client = new PostgresPrismaClient({ adapter, log: logLevels });
     return client as unknown as PrismaClient;

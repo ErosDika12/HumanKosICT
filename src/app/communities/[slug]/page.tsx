@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DemoBadge } from "@/components/DemoBadge";
 import { getCommunityBySlug, listPendingMembers } from "@/lib/data/communities";
-import { regenerateBridgeProposals, listBridgeProposalsForCommunity } from "@/lib/data/bridge";
+import { ensureBridgeProposals, listBridgeProposalsForCommunity } from "@/lib/data/bridge";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   joinCommunityAction,
@@ -38,7 +38,7 @@ export default async function CommunityDetailPage({
   const pendingMembers =
     canManage && community.visibility === "restricted" ? await listPendingMembers(user!.id, community.id) : [];
 
-  await regenerateBridgeProposals();
+  await ensureBridgeProposals();
   const bridgeProposals = await listBridgeProposalsForCommunity(community.id);
 
   return (

@@ -6,7 +6,7 @@ import { Avatar, ButtonLink, Card, Eyebrow, Pill, SectionHeading, buttonClass } 
 import { demoLoginAction } from "@/lib/auth/actions";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listActivities } from "@/lib/data/activities";
-import { getBridgeShowcase, getFeaturedBridgeId, regenerateBridgeProposals } from "@/lib/data/bridge";
+import { getBridgeShowcase, getFeaturedBridgeId, ensureBridgeProposals } from "@/lib/data/bridge";
 import { getDemoStats, listFriendPreview } from "@/lib/data/friends";
 import { getPhoto } from "@/lib/photos";
 import { isSimulatedPast, SIMULATED_NOW_LABEL } from "@/lib/simulated-clock";
@@ -23,7 +23,7 @@ const STEPS = [
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  await regenerateBridgeProposals();
+  await ensureBridgeProposals();
   const featuredId = await getFeaturedBridgeId();
   const [all, friends, stats, bridge] = await Promise.all([
     listActivities(),

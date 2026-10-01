@@ -12,7 +12,7 @@ import {
   type FriendCard,
 } from "@/lib/data/friends";
 import { listPlans } from "@/lib/data/invites";
-import { getBridgeShowcase, getFeaturedBridgeId, regenerateBridgeProposals } from "@/lib/data/bridge";
+import { getBridgeShowcase, getFeaturedBridgeId, ensureBridgeProposals } from "@/lib/data/bridge";
 import { SLOT_LABEL, slotOfActivity } from "@/lib/demo-social";
 import type { DemoActivity } from "@/lib/types";
 import { detectWeekendScope, parseTurn, weekendRange } from "./conversation-parser";
@@ -341,7 +341,7 @@ async function withFriend(args: {
 }
 
 async function bridgeAnswer(viewerId: string | undefined, join: boolean): Promise<ChatReply> {
-  await regenerateBridgeProposals();
+  await ensureBridgeProposals();
   const id = await getFeaturedBridgeId();
   const showcase = id ? await getBridgeShowcase(id, viewerId) : null;
   if (!showcase) {

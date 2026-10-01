@@ -9,7 +9,7 @@ import {
   getBridgeShowcase,
   getFeaturedBridgeId,
   listBridgeProposals,
-  regenerateBridgeProposals,
+  ensureBridgeProposals,
 } from "@/lib/data/bridge";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -28,7 +28,7 @@ const HOW_IT_WORKS = [
 
 export default async function BridgePage({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
   const { all } = await searchParams;
-  await regenerateBridgeProposals();
+  await ensureBridgeProposals();
   const user = await getCurrentUser();
   const featuredId = await getFeaturedBridgeId();
   const [featured, proposals, graph] = await Promise.all([

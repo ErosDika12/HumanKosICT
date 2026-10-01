@@ -113,12 +113,27 @@ export function ActivityMap({
         attributionControl: { compact: true },
       });
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
-      map.on("error", () => {
-        if (cancelled) return;
+      // Only give up when the base style itself cannot load. A single missed
+      // tile, glyph or sprite must not blank an otherwise working map.
+      let styleLoaded = false;
+      const giveUp = () => {
+        if (cancelled || styleLoaded) return;
         setFailed(true);
         map.remove();
         if (mapRef.current === map) mapRef.current = null;
+      };
+      map.on("load", () => {
+        styleLoaded = true;
+        window.clearTimeout(timer);
       });
+      map.on("error", (event) => {
+        const status = (event as { error?: { status?: number } }).error?.status;
+        const sourceId = (event as { sourceId?: string }).sourceId;
+        // Errors tied to a tile source or a late asset are non-fatal.
+        if (styleLoaded || sourceId || status === 404) return;
+        giveUp();
+      });
+      const timer = window.setTimeout(giveUp, 15_000);
       mapRef.current = map;
     } catch {
       // Synchronous construction failure of an external library (not
@@ -223,15 +238,26 @@ export function ActivityMap({
 
   if (failed) {
     return (
-      <div
-        role="status"
-        className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface-muted p-6 text-center"
-      >
-        <p className="font-medium text-foreground">Map tiles unavailable right now</p>
-        <p className="max-w-sm text-sm text-foreground-muted">
-          The map view couldn&apos;t reach its tile source. The list view below shows the exact
-          same seeded activities, fully filterable, with no functionality lost.
-        </p>
+      <div role="status" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-muted p-4">
+        <div>
+          <p className="font-medium text-foreground">The map couldn&apos;t load right now</p>
+          <p className="text-sm text-foreground-muted">Here are the same activities as a list, grouped by area.</p>
+        </div>
+        <ul className="grid max-h-[360px] gap-2 overflow-y-auto sm:grid-cols-2">
+          {activities.slice(0, 12).map((a) => (
+            <li key={a.slug}>
+              <a
+                href={`/discover/${encodeURIComponent(a.slug)}`}
+                className="flex min-h-11 flex-col rounded-xl border border-border bg-surface px-3 py-2 text-sm hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <span className="font-medium text-foreground">{a.title}</span>
+                <span className="text-xs text-foreground-muted">
+                  {a.areaEn} · {a.date} · {a.startTime}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }

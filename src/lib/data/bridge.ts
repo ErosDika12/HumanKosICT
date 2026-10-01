@@ -98,6 +98,19 @@ export async function regenerateBridgeProposals(): Promise<void> {
     if (existing && existing.status !== "SUGGESTED" && existing.status !== "INVALIDATED") continue;
 
     const { mutualBenefit, requiredResources, suggestedNextAction } = composeNarrative(a, b, need);
+    const reason = candidate.reasons.join("; ");
+    // Unchanged SUGGESTED rows need no write — keeps this cheap on a remote database.
+    if (
+      existing &&
+      existing.status === "SUGGESTED" &&
+      existing.score === candidate.score &&
+      existing.reason === reason &&
+      existing.mutualBenefit === mutualBenefit &&
+      existing.requiredResources === requiredResources &&
+      existing.suggestedNextAction === suggestedNextAction
+    ) {
+      continue;
+    }
     await prisma.bridgeProposal.upsert({
       where: {
         communityAId_communityBId_needId: {
@@ -127,6 +140,32 @@ export async function regenerateBridgeProposals(): Promise<void> {
       },
     });
   }
+}
+
+const ENSURE_TTL_MS = 60_000;
+let ensureInFlight: Promise<void> | null = null;
+let ensuredAt = 0;
+
+/**
+ * Page-render entry point: regenerates at most once per minute per server
+ * instance and shares one in-flight run between concurrent requests. Before
+ * this, every homepage / BRIDGE / needs request ran dozens of sequential
+ * writes, which exhausted the database connection pool under light traffic.
+ * Mutations (and tests) that need an immediate refresh call
+ * `regenerateBridgeProposals` directly.
+ */
+export async function ensureBridgeProposals(): Promise<void> {
+  if (Date.now() - ensuredAt < ENSURE_TTL_MS) return;
+  if (!ensureInFlight) {
+    ensureInFlight = regenerateBridgeProposals()
+      .then(() => {
+        ensuredAt = Date.now();
+      })
+      .finally(() => {
+        ensureInFlight = null;
+      });
+  }
+  await ensureInFlight;
 }
 
 function composeNarrative(

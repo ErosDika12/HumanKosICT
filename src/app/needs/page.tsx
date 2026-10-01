@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DemoBadge } from "@/components/DemoBadge";
 import { listNeeds, findSimilarOpenNeed } from "@/lib/data/needs";
-import { regenerateBridgeProposals } from "@/lib/data/bridge";
+import { ensureBridgeProposals } from "@/lib/data/bridge";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createNeedAction, toggleNeedSupportAction, reportNeedAction } from "@/lib/actions/need-actions";
 import type { ActivityCategory } from "@/lib/types";
@@ -24,7 +24,7 @@ export default async function NeedsPage({
 }) {
   const { submitted, reported, category, area } = await searchParams;
   const user = await getCurrentUser();
-  await regenerateBridgeProposals();
+  await ensureBridgeProposals();
   const needs = await listNeeds(user?.id);
   const similar =
     category && area

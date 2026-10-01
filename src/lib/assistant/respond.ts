@@ -4,7 +4,7 @@ import { listActivities } from "@/lib/data/activities";
 import { scoreActivities } from "@/lib/data/recommendations";
 import { isSimulatedPast } from "@/lib/simulated-clock";
 import { listMatches } from "@/lib/data/people";
-import { regenerateBridgeProposals, listBridgeProposals } from "@/lib/data/bridge";
+import { ensureBridgeProposals, listBridgeProposals } from "@/lib/data/bridge";
 import type { ActivityCategory } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
 
@@ -103,7 +103,7 @@ export async function buildAssistantResponse(
   }
 
   if (intent.type === "bridge-question") {
-    await regenerateBridgeProposals();
+    await ensureBridgeProposals();
     const proposals = await listBridgeProposals();
     const slugs = new Set(intent.communityMentions.map((m) => m.slug));
     const match = proposals.find(

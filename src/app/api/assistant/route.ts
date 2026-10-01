@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { respondToChat, type ChatMessage, type ChatState } from "@/lib/assistant/conversation";
 import { consumeAssistantQuota } from "@/lib/assistant/usage";
 import { getAiProviderConfig } from "@/lib/assistant/ai-provider";
+import { sanitizeConstraints } from "@/lib/assistant/constraints";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,13 @@ function parseBody(raw: unknown): { messages: ChatMessage[]; state: ChatState } 
     messages.push({ role, content: content.slice(0, MAX_CONTENT) });
   }
   if (messages[messages.length - 1].role !== "user" || !messages[messages.length - 1].content.trim()) return null;
-  const st = (body.state ?? {}) as { focusFriendId?: unknown; shownSlugs?: unknown };
+  const st = (body.state ?? {}) as { focusFriendId?: unknown; shownSlugs?: unknown; constraints?: unknown };
   const state: ChatState = {
     focusFriendId: typeof st.focusFriendId === "string" ? st.focusFriendId.slice(0, 64) : undefined,
     shownSlugs: Array.isArray(st.shownSlugs)
       ? st.shownSlugs.filter((s): s is string => typeof s === "string").map((s) => s.slice(0, 120)).slice(-40)
       : [],
+    constraints: sanitizeConstraints(st.constraints),
   };
   return { messages, state };
 }

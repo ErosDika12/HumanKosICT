@@ -5,6 +5,7 @@
  * up from stored records by the engine (conversation.ts), never inferred here.
  */
 import { parseAssistantIntent, type AssistantIntent } from "./intent-parser";
+export { weekendRange } from "@/lib/time-window";
 
 export type ConversationTopic =
   | "with-friend"
@@ -91,26 +92,4 @@ export function detectWeekendScope(text: string): WeekendScope {
   if (q.includes("next weekend")) return "next";
   if (q.includes("this weekend") || /\bweekend\b|\bsaturday\b|\bsunday\b/.test(q)) return "this";
   return null;
-}
-
-/** The Saturday–Sunday span for a scope, relative to an ISO "today" (UTC arithmetic, no real clock). */
-export function weekendRange(todayIso: string, scope: "this" | "next"): { from: string; to: string } {
-  const today = new Date(`${todayIso}T00:00:00Z`);
-  const dow = today.getUTCDay(); // 0 = Sunday … 6 = Saturday
-  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  let saturday: Date;
-  let sunday: Date;
-  if (dow === 0) {
-    saturday = addDays(today, -1);
-    sunday = today;
-  } else {
-    saturday = addDays(today, (6 - dow + 7) % 7);
-    sunday = addDays(saturday, 1);
-  }
-  if (scope === "next") {
-    saturday = addDays(saturday, 7);
-    sunday = addDays(sunday, 7);
-  }
-  return { from: iso(saturday), to: iso(sunday) };
 }

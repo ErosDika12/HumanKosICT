@@ -10,7 +10,8 @@
  *
  *   score = 2 * (number of matched interests)
  *         + 1                          if the activity falls on the
- *                                      requested weekday/weekend bucket
+ *                                      requested window (this week /
+ *                                      this weekend / next weekend / weekday)
  *         + max(0, 3 - distanceKm/5)   if the user opted into their location
  *
  * Accessibility and age-eligibility are HARD constraints applied earlier as
@@ -24,6 +25,7 @@
  */
 import type { DemoActivity, InterestId } from "@/lib/types";
 import { getInterest } from "@/lib/types";
+import { matchesWindow, WINDOW_LABEL_EN, type TimeWindow } from "@/lib/time-window";
 
 export type DayBucket = "weekday" | "weekend";
 
@@ -52,7 +54,8 @@ export function haversineKm(a: GeoPoint, b: GeoPoint): number {
 
 export interface RecommendationContext {
   interestIds?: InterestId[];
-  when?: DayBucket;
+  /** A date window resolved on the simulated clock (see src/lib/time-window.ts). */
+  when?: TimeWindow;
   origin?: GeoPoint;
 }
 
@@ -79,9 +82,9 @@ export function scoreActivities(
       );
     }
 
-    if (ctx.when && dayBucketOf(activity.date) === ctx.when) {
+    if (ctx.when && matchesWindow(activity.date, ctx.when)) {
       score += 1;
-      reasons.push(ctx.when === "weekend" ? "Happening this weekend" : "Happening on a weekday");
+      reasons.push(`Happening ${WINDOW_LABEL_EN[ctx.when]}`);
     }
 
     // Distance itself is rendered as a structured field (ActivityCard's

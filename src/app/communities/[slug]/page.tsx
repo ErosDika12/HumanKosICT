@@ -194,6 +194,24 @@ export default async function CommunityDetailPage({
         )}
       </div>
 
+      {community.pastActivities.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface p-5">
+          <h2 className="font-display text-sm font-semibold text-foreground">Recent events (already happened)</h2>
+          <ul className="mt-2 flex flex-col gap-2">
+            {community.pastActivities.map((a) => (
+              <li key={a.slug}>
+                <Link href={`/discover/${a.slug}`} className="text-sm text-brand underline underline-offset-2">
+                  {a.title}
+                </Link>
+                <span className="ml-2 text-xs text-foreground-muted">
+                  {a.date} · {a.startTime}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="rounded-xl border border-border bg-surface p-5">
         <h2 className="font-display text-sm font-semibold text-foreground">Projects</h2>
         {community.projects.length === 0 ? (

@@ -83,8 +83,8 @@ describe("scoreActivities", () => {
 
   it("gives a weekend bonus and reason only to weekend-dated activities when requested", () => {
     const activities = [
-      fixtureActivity({ id: "weekday", date: "2036-06-13" }), // Friday
-      fixtureActivity({ id: "weekend", date: "2036-06-14" }), // Saturday
+      fixtureActivity({ id: "weekday", date: "2036-06-17" }), // Tuesday
+      fixtureActivity({ id: "weekend", date: "2036-06-21" }), // Saturday of THIS weekend (today = Mon 16 June)
     ];
     const scored = scoreActivities(activities, { when: "weekend" });
     assert.equal(scored[0].id, "weekend");

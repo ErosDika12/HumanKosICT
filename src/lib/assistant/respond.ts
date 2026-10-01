@@ -6,6 +6,7 @@ import { isSimulatedPast } from "@/lib/simulated-clock";
 import { listMatches } from "@/lib/data/people";
 import { ensureBridgeProposals, listBridgeProposals } from "@/lib/data/bridge";
 import type { ActivityCategory } from "@/lib/types";
+import { describeConstraints, satisfies } from "./constraints";
 import { prisma } from "@/lib/prisma";
 
 const CATEGORY_LABEL: Record<ActivityCategory, string> = {
@@ -182,11 +183,8 @@ function buildDraftEventLink(communitySlug: string, intent: AssistantIntent): st
 }
 
 async function searchActivities(intent: AssistantIntent): Promise<AssistantActivityResult[]> {
-  const all = await listActivities({
-    category: intent.category,
-    when: intent.when,
-    accessibility: intent.accessibility,
-  });
+  // Location, date, cost and accessibility are hard constraints (see constraints.ts).
+  const all = (await listActivities({ category: intent.category })).filter((a) => satisfies(a, intent.constraints));
   const scored = scoreActivities(all, { when: intent.when });
   // Prefer upcoming activities; a past one is only ever shown labeled honestly.
   const upcoming = scored.filter((a) => !isSimulatedPast(a.date));
@@ -203,17 +201,16 @@ async function searchActivities(intent: AssistantIntent): Promise<AssistantActiv
 }
 
 function describeFilters(intent: AssistantIntent): string {
-  const parts: string[] = [];
-  if (intent.category) parts.push(CATEGORY_LABEL[intent.category]);
-  if (intent.when) parts.push(intent.when === "weekend" ? "this weekend" : "on a weekday");
-  if (intent.accessibility?.length) parts.push("accessible");
-  return parts.length > 0 ? ` for ${parts.join(", ")}` : "";
+  const text = describeConstraints({ ...intent.constraints, category: intent.category ?? intent.constraints.category });
+  return text ? ` for ${text}` : "";
 }
 
 function buildDiscoverLink(intent: AssistantIntent): string {
   const params = new URLSearchParams();
   if (intent.category) params.set("category", intent.category);
   if (intent.when) params.set("when", intent.when);
+  if (intent.constraints.area) params.set("area", intent.constraints.area);
+  if (intent.constraints.cost) params.set("cost", intent.constraints.cost);
   if (intent.accessibility?.length) params.set("accessibility", intent.accessibility.join(","));
   const qs = params.toString();
   return qs ? `/discover?${qs}` : "/discover";

@@ -9,7 +9,7 @@ import {
   DIFFICULTY_TO_DB,
   toDemoActivity,
 } from "./mappers";
-import { dayBucketOf, type DayBucket } from "./recommendations";
+import { matchesWindow, type TimeWindow } from "@/lib/time-window";
 
 const ACTIVITY_INCLUDE = {
   community: { select: { id: true, slug: true, name: true, verified: true } },
@@ -47,8 +47,8 @@ export interface ActivityFilters {
   accessibility?: string[];
   ageEligibility?: DemoActivity["ageEligibility"];
   difficulty?: DemoActivity["difficulty"];
-  /** Hard constraint: matches the activity's actual calendar weekday/weekend (see recommendations.ts). */
-  when?: DayBucket;
+  /** Hard constraint: the activity's date falls inside this window on the simulated clock (see time-window.ts). */
+  when?: TimeWindow;
 }
 
 /**
@@ -87,7 +87,7 @@ export async function listActivities(filters: ActivityFilters = {}): Promise<Dem
     );
   }
   if (filters.when) {
-    activities = activities.filter((a) => dayBucketOf(a.date) === filters.when);
+    activities = activities.filter((a) => matchesWindow(a.date, filters.when!));
   }
 
   return activities;

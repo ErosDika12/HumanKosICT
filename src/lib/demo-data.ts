@@ -105,8 +105,8 @@ export const ACTIVITIES: DemoActivity[] = [
     slug: "punetori-ai-fillestare",
     title: "Beginner AI & Python Workshop",
     titleSq: "Punëtori Fillestare — AI dhe Python",
-    summary: "A hands-on Saturday workshop for anyone curious about programming and AI.",
-    summarySq: "Punëtori praktike e së shtunës për këdo kurioz rreth programimit dhe AI-së.",
+    summary: "A hands-on Friday-morning workshop for anyone curious about programming and AI.",
+    summarySq: "Punëtori praktike e së premtes në mëngjes për këdo kurioz rreth programimit dhe AI-së.",
     category: "technology",
     interestTags: ["technology", "education", "science"],
     areaSq: "Prishtinë — Qendër",
@@ -596,9 +596,9 @@ export const ACTIVITIES: DemoActivity[] = [
     organizer: { id: "org-ai-club", name: "Prishtina AI Klub", verified: true },
     communitySlug: "prishtina-ai-klub",
     description:
-      "This is the kickoff of the accepted BRIDGE collaboration between Prishtina AI Klub and Gjelbër për Prishtinën. Volunteers from both communities scope the first prototype for the Dardania park need.",
+      "This is the kickoff of the accepted BRIDGE collaboration between Prishtina AI Klub and Gjelbër për Prishtinën. Neighbors asked for a second monthly clean-up in Dardania: volunteers from both communities sketch the volunteer sign-up app, choose where the first low-cost park sensors go, and propose a date for the second clean-up.",
     descriptionSq:
-      "Ky është nisja e bashkëpunimit BRIDGE të pranuar mes Prishtina AI Klub dhe Gjelbër për Prishtinën. Vullnetarët nga të dy komunitetet përcaktojnë prototipin e parë për nevojën e parkut në Dardani.",
+      "Ky është nisja e bashkëpunimit BRIDGE të pranuar mes Prishtina AI Klub dhe Gjelbër për Prishtinën. Fqinjët kërkuan një pastrim të dytë mujor në Dardani: vullnetarët nga të dy komunitetet skicojnë aplikacionin e regjistrimit të vullnetarëve, zgjedhin ku vendosen sensorët e parë të lirë në park dhe propozojnë një datë për pastrimin e dytë.",
   },
   {
     id: "act-germia-walk",

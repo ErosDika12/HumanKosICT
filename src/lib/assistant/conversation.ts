@@ -1,8 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { SIMULATED_NOW_ISO, SIMULATED_NOW_LABEL, isSimulatedPast } from "@/lib/simulated-clock";
+import { SIMULATED_NOW_LABEL, isSimulatedPast } from "@/lib/simulated-clock";
 import { listActivities } from "@/lib/data/activities";
-import { dayBucketOf, scoreActivities } from "@/lib/data/recommendations";
+import { scoreActivities } from "@/lib/data/recommendations";
 import { getUserInterests } from "@/lib/data/interests";
 import {
   listDemoFriendNames,
@@ -15,7 +15,16 @@ import { listPlans } from "@/lib/data/invites";
 import { getBridgeShowcase, getFeaturedBridgeId, ensureBridgeProposals } from "@/lib/data/bridge";
 import { SLOT_LABEL, slotOfActivity } from "@/lib/demo-social";
 import type { DemoActivity } from "@/lib/types";
-import { detectWeekendScope, parseTurn, weekendRange } from "./conversation-parser";
+import { parseTurn } from "./conversation-parser";
+import {
+  RELAXABLE,
+  describeConstraints,
+  extractConstraints,
+  isRefinement,
+  mergeConstraints,
+  satisfies,
+  type SearchConstraints,
+} from "./constraints";
 import { generateGroundedText, getAiProviderConfig, AiProviderError } from "./ai-provider";
 
 export interface ChatMessage {
@@ -27,6 +36,8 @@ export interface ChatMessage {
 export interface ChatState {
   focusFriendId?: string;
   shownSlugs: string[];
+  /** The active activity-search constraints, carried across follow-up turns ("Only in Dardania, please"). */
+  constraints?: SearchConstraints;
 }
 
 export type ChatCard =
@@ -168,7 +179,7 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
       reply = await findFriendsAnswer(viewerId);
       break;
     case "activities":
-      reply = await activitiesAnswer({ text: lastUser, viewerId, shown, going, turn, friends });
+      reply = await activitiesAnswer({ text: lastUser, viewerId, shown, going, turn, previous: input.state.constraints });
       break;
     case "greeting":
       reply = {
@@ -191,6 +202,7 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
 
   reply.state = {
     focusFriendId: reply.state.focusFriendId ?? (topic === "with-friend" ? friendIdForTurn : validFocus),
+    constraints: reply.state.constraints,
     shownSlugs: [...new Set([...shown, ...reply.cards.flatMap((c) => (c.kind === "activity" ? [c.slug] : []))])].slice(-40),
   };
 
@@ -220,52 +232,80 @@ async function activitiesAnswer(args: {
   shown: Set<string>;
   going: Set<string>;
   turn: ReturnType<typeof parseTurn>;
-  friends: FriendCard[];
+  previous?: SearchConstraints;
 }): Promise<ChatReply> {
-  const { text, viewerId, shown, going, turn } = args;
-  const scope = detectWeekendScope(text);
-  const range = scope ? weekendRange(SIMULATED_NOW_ISO, scope) : null;
-  const all = await listActivities({
-    category: turn.intent.category,
-    accessibility: turn.intent.accessibility,
-  });
-  const interestIds = viewerId ? await getUserInterests(viewerId) : [];
-  let pool = all.filter(
-    (a) => !isSimulatedPast(a.date) && a.status !== "canceled" && a.ageEligibility !== "supervised-minors" && a.capacity - a.rsvpCount > 0
-  );
-  if (range) pool = pool.filter((a) => a.date >= range.from && a.date <= range.to);
-  else if (turn.intent.when) pool = pool.filter((a) => dayBucketOf(a.date) === turn.intent.when);
+  const { text, viewerId, shown, going, turn, previous } = args;
 
-  const scored = scoreActivities(pool, { interestIds, when: turn.intent.when });
+  // A short follow-up refines the previous search; a fresh request replaces it.
+  const stated = extractConstraints(text);
+  const carries = Boolean(previous) && (turn.isFollowUp || isRefinement(text));
+  const constraints = carries ? mergeConstraints(previous, stated) : stated;
+  const described = describeConstraints(constraints);
+  const filterText = described ? ` (${described})` : "";
+
+  const interestIds = viewerId ? await getUserInterests(viewerId) : [];
+  // Location, date, cost, accessibility and eligibility are filtered here, in code — never left to ranking.
+  const all = await listActivities({ category: constraints.category });
+  const open = all.filter((a) => !isSimulatedPast(a.date) && a.status !== "canceled" && a.capacity - a.rsvpCount > 0);
+  const matching = open.filter((a) => satisfies(a, constraints));
+  const scored = scoreActivities(matching, { interestIds, when: constraints.window });
   const fresh = scored.filter((a) => !shown.has(a.slug));
   const chosen = (turn.isFollowUp ? fresh : scored).slice(0, 3);
+  const stateOut: ChatState = { shownSlugs: [], constraints: described ? constraints : undefined };
+  const loginHint = viewerId ? "" : " Log in as demo for picks based on your interests.";
 
-  const bits: string[] = [];
-  if (turn.intent.category) bits.push(turn.intent.category);
-  if (range) bits.push(scope === "next" ? "next weekend" : "this weekend");
-  if (turn.intent.accessibility?.length) bits.push("wheelchair-accessible");
-  const filterText = bits.length ? ` (${bits.join(", ")})` : "";
-  const rangeText = range ? ` In this scenario, today is ${SIMULATED_NOW_LABEL}, so the weekend is ${range.from} to ${range.to}.` : "";
-
-  if (chosen.length === 0) {
+  if (chosen.length > 0) {
     return {
-      text: turn.isFollowUp && scored.length > 0
-        ? `That's every matching activity I have${filterText} — you've seen all ${scored.length}.${rangeText}`
-        : `I couldn't find an open upcoming activity${filterText}.${rangeText} Try another day or category, or browse the full list on Discover.`,
-      cards: [],
-      suggestions: ["What can I do this weekend?", "Show me something accessible", "Find a technology activity"],
+      text: `${turn.isFollowUp ? "Here's another option" : "Here's what I found"}${filterText}: ${chosen.map((a) => a.title).join("; ")}.${loginHint}`,
+      cards: chosen.map((a) =>
+        toActivityCard(a, a.matchReasons?.length ? a.matchReasons : [`${SLOT_LABEL[slotOfActivity(a.date, a.startTime)]}`], going, Boolean(viewerId))
+      ),
+      suggestions: ["Show me another", "Which activity could I attend with Arta?", "How do I join the BRIDGE project?"],
       source: "rules",
-      state: { shownSlugs: [] },
+      state: stateOut,
+    };
+  }
+
+  if (turn.isFollowUp && scored.length > 0) {
+    return {
+      text: `That's every matching activity I have${filterText} — you've seen all ${scored.length}.`,
+      cards: [],
+      suggestions: ["What can I do this weekend?", "Show me something accessible"],
+      source: "rules",
+      state: stateOut,
+    };
+  }
+
+  // Nothing matches. Offer ONE clearly labelled alternative that relaxes location, date or cost —
+  // never accessibility or eligibility — and say exactly which requirement it does not meet.
+  const unmet = (key: keyof SearchConstraints): string =>
+    key === "window" ? "the date" : key === "area" ? "the area" : "the price";
+  for (const key of RELAXABLE) {
+    if (constraints[key] === undefined) continue;
+    const alternatives = scoreActivities(open.filter((a) => satisfies(a, constraints, [key])), { interestIds }).slice(0, 2);
+    if (alternatives.length === 0) continue;
+    const label =
+      key === "window"
+        ? "doesn't fall in the time you asked for"
+        : key === "area"
+          ? "isn't in the area you asked for"
+          : `isn't ${constraints.cost === "free" ? "free" : "paid"}`;
+    return {
+      text: `Nothing matches everything you asked for${filterText}. The closest alternative${alternatives.length === 1 ? "" : "s"} below keep${alternatives.length === 1 ? "s" : ""} your other requirements but ${label}.`,
+      cards: alternatives.map((a) =>
+        toActivityCard(a, [`Alternative — not a match on ${unmet(key)}`, ...(a.matchReasons ?? [])], going, Boolean(viewerId))
+      ),
+      suggestions: ["Show me something accessible", "What can I do this weekend?"],
+      source: "rules",
+      state: stateOut,
     };
   }
   return {
-    text: `${turn.isFollowUp ? "Here's another option" : "Here's what I found"}${filterText}: ${chosen.map((a) => a.title).join("; ")}.${rangeText}${viewerId ? "" : " Log in as demo for picks based on your interests."}`,
-    cards: chosen.map((a) =>
-      toActivityCard(a, a.matchReasons?.length ? a.matchReasons : [`${SLOT_LABEL[slotOfActivity(a.date, a.startTime)]}`], going, Boolean(viewerId))
-    ),
-    suggestions: ["Show me another", "Which activity could I attend with Arta?", "How do I join the BRIDGE project?"],
+    text: `I couldn't find an open upcoming activity${filterText}, and nothing close enough to suggest as an alternative. Try changing the day or area, or browse the full list on Discover.`,
+    cards: [],
+    suggestions: ["What can I do this weekend?", "Show me something accessible", "Find a technology activity"],
     source: "rules",
-    state: { shownSlugs: [] },
+    state: stateOut,
   };
 }
 

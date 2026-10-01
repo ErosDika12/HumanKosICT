@@ -450,6 +450,21 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
   // technology need (Phase 4 brief: "at least one ... youth activity
   // need"), each with a real submitter and, for the environment one, a
   // real supporter — demonstrating "support instead of duplicating."
+  // Needs seeded by earlier deploys carried claims the data contradicted ("fills up within a day",
+  // "the Tuesday one is already full" while 8 places were open). Rewrite exactly those rows by their
+  // old text — never anything a visitor wrote.
+  const ENV_NEED_TEXT =
+    "Neighbors have asked for a second monthly clean-up session so more people can help look after the Dardania green space.";
+  const CODING_NEED_TEXT =
+    "Parents in Dardania have asked for a second weekly supervised coding session, on a different day, so more teens can take part.";
+  await prisma.communityNeed.updateMany({
+    where: { description: "Neighbors have asked for a second monthly clean-up session — the current one fills up within a day." },
+    data: { description: ENV_NEED_TEXT },
+  });
+  await prisma.communityNeed.updateMany({
+    where: { description: "Parents in Dardania have asked for a second weekly youth coding session — the supervised Tuesday one is already full." },
+    data: { description: CODING_NEED_TEXT },
+  });
   const environmentCommunity = await prisma.community.findUniqueOrThrow({
     where: { slug: "gjelber-per-prishtinen" },
   });
@@ -464,7 +479,7 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
         category: "ENVIRONMENT",
         areaSq: "Prishtinë — Dardania",
         description:
-          "Neighbors have asked for a second monthly clean-up session — the current one fills up within a day.",
+          ENV_NEED_TEXT,
         submittedById: "user-fatlume",
       },
     }));
@@ -496,7 +511,7 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
         category: "TECHNOLOGY",
         areaSq: "Prishtinë — Dardania",
         description:
-          "Parents in Dardania have asked for a second weekly youth coding session — the supervised Tuesday one is already full.",
+          CODING_NEED_TEXT,
         submittedById: "user-blerta",
       },
     });
@@ -767,6 +782,12 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
   // story (need -> proposal -> project -> volunteers -> kickoff session) is
   // visible. A human decision is never overwritten by regeneration (bridge.ts).
   const [communityAId, communityBId] = [aiClubForNeed.id, environmentCommunity.id].sort();
+  const FLAGSHIP_DESCRIPTION =
+    "Neighbors asked for a second monthly clean-up in Dardania. This project makes it possible to organize one without overloading the organizers: a simple volunteer sign-up app where neighbors pick a shift, and a few low-cost sensors that show which corners of the park need attention first. The first joint session is the Eco-Tech Idea Lab on 25 June, where volunteers sketch the sign-up flow and propose a date for the second clean-up. Fictional demo project.";
+  const FLAGSHIP_DESCRIPTION_SQ =
+    "Fqinjët kërkuan një pastrim të dytë mujor në Dardani. Ky projekt e bën të mundur pa e mbingarkuar organizatorët: një aplikacion i thjeshtë ku fqinjët zgjedhin një turn dhe disa sensorë të lirë që tregojnë cilat cepa të parkut kanë nevojë më parë. Sesioni i parë i përbashkët është Laboratori i Ideve Eko-Teknologji më 25 qershor, ku vullnetarët skicojnë regjistrimin dhe propozojnë një datë për pastrimin e dytë. Projekt demonstrues fiktiv.";
+  const FLAGSHIP_BENEFIT =
+    "Prishtina AI Klub builds the tools and Gjelbër për Prishtinën brings the volunteers and the knowledge of the park. Neighbors asked for a second monthly clean-up: the sign-up app lets people choose shifts, and the sensors show which parts of the park need attention first — so a second clean-up can run without extra work for the organizers.";
   const flagshipProject = await prisma.project.upsert({
     where: { slug: "collaboration-prishtina-ai-klub-gjelber-per-prishtinen" },
     create: {
@@ -775,12 +796,12 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
       title: "Collaboration: Prishtina AI Klub × Gjelbër për Prishtinën",
       titleSq: "Bashkëpunim: Prishtina AI Klub × Gjelbër për Prishtinën",
       description:
-        "Prototype low-cost soil-moisture and litter sensors plus a simple volunteer app for Dardania's park, then run the first joint session — the Eco-Tech Idea Lab on 25 June. Fictional demo project.",
+        FLAGSHIP_DESCRIPTION,
       descriptionSq:
-        "Prototipizoni sensorë të lirë për lagështinë e tokës dhe mbeturinat plus një aplikacion të thjeshtë për vullnetarë në parkun e Dardanisë, pastaj mbani sesionin e parë të përbashkët — Laboratori i Ideve Eko-Teknologji më 25 qershor. Projekt demonstrues fiktiv.",
+        FLAGSHIP_DESCRIPTION_SQ,
       volunteersNeeded: 12,
     },
-    update: { volunteersNeeded: 12 },
+    update: { volunteersNeeded: 12, description: FLAGSHIP_DESCRIPTION, descriptionSq: FLAGSHIP_DESCRIPTION_SQ },
   });
   for (const volunteerId of ["user-arta", "friend-lulzim", "friend-kaltrina"]) {
     await prisma.projectVolunteer.upsert({
@@ -801,8 +822,7 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
       score: 8,
       reason:
         "Complementary categories (technology + environment); Both can act locally in Prishtinë — Dardania; Gjelbër për Prishtinën directly works in this need's category (environment); At least one community has an upcoming scheduled activity to build on; Shared audience interest: environment, volunteering",
-      mutualBenefit:
-        "Prishtina AI Klub brings technology expertise; Gjelbër për Prishtinën brings environment reach in Prishtinë — Dardania. Together they can directly address neighbors' request for a second clean-up session by making volunteer coordination and park monitoring easier.",
+      mutualBenefit: FLAGSHIP_BENEFIT,
       requiredResources:
         "A shared room in Dardania, volunteer time from both communities, and coordination between Drin Gashi (Prishtina AI Klub) and Fatlume Berisha (Gjelbër për Prishtinën).",
       suggestedNextAction:
@@ -813,6 +833,6 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
       decidedById: "user-fatlume",
       decidedAt: new Date(),
     },
-    update: { status: "ACCEPTED", draftProjectId: flagshipProject.id, kickoffActivityId: ecoLab.id },
+    update: { status: "ACCEPTED", draftProjectId: flagshipProject.id, kickoffActivityId: ecoLab.id, mutualBenefit: FLAGSHIP_BENEFIT },
   });
 }

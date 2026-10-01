@@ -21,16 +21,26 @@ describe("Discover filter combinations against seeded fixtures", () => {
     assert.ok(!wheelchairAndQuiet.map((a) => a.slug).includes("shetitje-natyrore-germia"));
   });
 
-  it("filters by weekend vs weekday using the activities' real calendar dates", async () => {
-    const weekend = await listActivities({ when: "weekend" });
-    const weekendSlugs = weekend.map((a) => a.slug);
-    assert.ok(weekendSlugs.includes("pastrim-parku-gjelber"));
-    assert.ok(weekendSlugs.includes("shetitje-fotografike-qender"));
-    assert.ok(!weekendSlugs.includes("kodim-per-adoleshente")); // a Wednesday
+  it("'weekend' means THIS weekend on the simulated clock (Mon 16 June 2036), not every weekend in the data", async () => {
+    const weekend = (await listActivities({ when: "weekend" })).map((a) => a.slug);
+    assert.ok(weekend.includes("shetitje-fotografike-qender")); // Sat 21 June
+    assert.ok(weekend.includes("mbjellja-e-pemeve-dardania")); // Sun 22 June
+    assert.ok(!weekend.includes("pastrim-parku-gjelber")); // 14 June — already happened
+    assert.ok(!weekend.includes("turne-basketbolli-3x3")); // 28 June — next weekend
+    assert.ok(!weekend.includes("kodim-per-adoleshente")); // a Tuesday
+
+    const nextWeekend = (await listActivities({ when: "next-weekend" })).map((a) => a.slug);
+    assert.ok(nextWeekend.includes("turne-basketbolli-3x3"));
+    assert.ok(!nextWeekend.includes("shetitje-fotografike-qender"));
+
+    const week = (await listActivities({ when: "week" })).map((a) => a.slug);
+    assert.ok(week.includes("kodim-per-adoleshente")); // Tue 17 June
+    assert.ok(week.includes("shetitje-fotografike-qender")); // Sat 21 June
+    assert.ok(!week.includes("turne-basketbolli-3x3"));
 
     const weekday = await listActivities({ when: "weekday" });
-    assert.ok(weekday.every((a) => !weekend.map((w) => w.slug).includes(a.slug)));
     assert.ok(weekday.length > 0);
+    assert.ok(weekday.every((a) => ![0, 6].includes(new Date(`${a.date}T00:00:00Z`).getUTCDay())));
   });
 
   it("filters by cost and by indoor/outdoor", async () => {

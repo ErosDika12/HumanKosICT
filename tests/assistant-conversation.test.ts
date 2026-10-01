@@ -1,3 +1,4 @@
+import type { ChatCard, ChatState } from "@/lib/assistant/conversation";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { detectFriendMention, detectWeekendScope, parseTurn, weekendRange } from "@/lib/assistant/conversation-parser";
@@ -180,7 +181,7 @@ describe("assistant answers are grounded in stored records", () => {
       assert.ok(c.kind === "activity" && /2[12] June|Saturday|Sunday/.test(c.when), c.kind === "activity" ? c.when : "");
       assert.ok(c.kind === "activity" && c.spotsLeft > 0);
     }
-    assert.match(reply.text, /2036-06-21 to 2036-06-22/);
+    assert.match(reply.text, /this weekend \(21–22 June\)/);
   });
 
   it("'another' never repeats a shown activity, and states plainly when options run out", async () => {
@@ -229,5 +230,58 @@ describe("assistant answers are grounded in stored records", () => {
     const reply = await respondToChat({ messages: [{ role: "user", content: "hello" }], state: { shownSlugs: [] }, viewerId: v.id, aiAllowed: true });
     assert.equal(reply.source, "rules");
     assert.equal(reply.notice, undefined);
+  });
+});
+
+describe("assistant hard constraints and follow-up context", () => {
+  async function ask(content: string, history: { role: "user" | "assistant"; content: string }[], state: ChatState, viewerId: string) {
+    return respondToChat({ messages: [...history, { role: "user", content }], state, viewerId, aiAllowed: false });
+  }
+  const areaOf = (c: ChatCard) => (c.kind === "activity" ? c.area : "");
+
+  it("'free wheelchair accessible activity in Dardania this weekend' returns only Dardania, and a follow-up keeps every constraint", async () => {
+    const v = await createDemoVisitor();
+    const q1 = "Find a free wheelchair accessible activity in Dardania this weekend";
+    const r1 = await ask(q1, [], { shownSlugs: [] }, v.id);
+    const cards1 = r1.cards.filter((c) => c.kind === "activity");
+    assert.ok(cards1.length > 0, r1.text);
+    for (const c of cards1) {
+      assert.equal(areaOf(c), "Dardania");
+      assert.ok(c.kind === "activity" && /2[12] June/.test(c.when), c.kind === "activity" ? c.when : "");
+    }
+    assert.ok(!cards1.some((c) => c.kind === "activity" && c.title.includes("Photography")), "the Center photo walk must not appear");
+
+    // Follow-up: location restated; weekend, free and accessibility must survive.
+    const r2 = await ask("Only in Dardania, please", [{ role: "user", content: q1 }, { role: "assistant", content: r1.text }], r1.state, v.id);
+    const cards2 = r2.cards.filter((c) => c.kind === "activity");
+    assert.ok(cards2.length > 0, r2.text);
+    for (const c of cards2) {
+      assert.equal(areaOf(c), "Dardania");
+      assert.ok(c.kind === "activity" && /2[12] June/.test(c.when));
+    }
+    assert.deepEqual(r2.state.constraints, r1.state.constraints);
+    assert.match(r2.text, /free/);
+    assert.match(r2.text, /Dardania/);
+    assert.match(r2.text, /this weekend/);
+  });
+
+  it("when nothing matches it says so and labels any alternative, never relaxing accessibility", async () => {
+    const v = await createDemoVisitor();
+    // Ulpiana's only weekend activity (the family bike ride) is not wheelchair-accessible.
+    const r = await ask("Find a free wheelchair accessible activity in Ulpiana this weekend", [], { shownSlugs: [] }, v.id);
+    assert.match(r.text, /Nothing matches everything you asked for/);
+    const cards = r.cards.filter((c) => c.kind === "activity");
+    assert.ok(cards.length > 0);
+    for (const c of cards) {
+      assert.ok(c.kind === "activity" && c.reasons[0].startsWith("Alternative"), "alternatives are clearly labelled");
+      assert.ok(c.kind === "activity" && !/bike ride/i.test(c.title), "the non-accessible bike ride is never offered");
+    }
+  });
+
+  it("a brand-new full request replaces earlier constraints instead of inheriting them", async () => {
+    const v = await createDemoVisitor();
+    const r1 = await ask("Find a free wheelchair accessible activity in Dardania this weekend", [], { shownSlugs: [] }, v.id);
+    const r2 = await ask("What can I do next weekend?", [], r1.state, v.id);
+    assert.deepEqual(r2.state.constraints, { window: "next-weekend" });
   });
 });

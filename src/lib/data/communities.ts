@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { CATEGORY_FROM_DB, CATEGORY_TO_DB } from "./mappers";
 import type { ActivityCategory } from "@/lib/types";
 import { assertBoundedText, MAX_LONG_TEXT } from "@/lib/validation";
+import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
 
 export class CommunityAuthorizationError extends Error {}
 
@@ -16,13 +17,25 @@ export interface CommunitySummary {
   visibility: "public" | "restricted";
   verified: boolean;
   memberCount: number;
+  description: string;
+  descriptionSq: string;
+  /** The next published activity on or after the simulated today, or null. */
+  nextActivity: { slug: string; title: string; date: string; startTime: string; areaEn: string } | null;
 }
 
 /** Only PUBLISHED communities — a DRAFT one (just created, not yet moderator-approved) never appears here. */
 export async function listCommunities(): Promise<CommunitySummary[]> {
   const rows = await prisma.community.findMany({
     where: { status: "PUBLISHED" },
-    include: { _count: { select: { memberships: { where: { status: "ACTIVE", user: { isDemoVisitor: false } } } } } },
+    include: {
+      _count: { select: { memberships: { where: { status: "ACTIVE", user: { isDemoVisitor: false } } } } },
+      activities: {
+        where: { status: "PUBLISHED", date: { gte: SIMULATED_NOW_ISO } },
+        orderBy: [{ date: "asc" }, { startTime: "asc" }],
+        take: 1,
+        select: { slug: true, title: true, date: true, startTime: true, areaEn: true },
+      },
+    },
     orderBy: { name: "asc" },
   });
   return rows.map((r) => ({
@@ -34,12 +47,15 @@ export async function listCommunities(): Promise<CommunitySummary[]> {
     visibility: r.visibility === "RESTRICTED" ? "restricted" : "public",
     verified: r.verified,
     memberCount: r._count.memberships,
+    description: r.description,
+    descriptionSq: r.descriptionSq,
+    nextActivity: r.activities[0] ?? null,
   }));
 }
 
 export type ViewerMembership = "none" | "pending" | "member" | "organizer";
 
-export interface CommunityDetail extends CommunitySummary {
+export interface CommunityDetail extends Omit<CommunitySummary, "nextActivity"> {
   description: string;
   descriptionSq: string;
   language: string | null;
@@ -47,7 +63,10 @@ export interface CommunityDetail extends CommunitySummary {
   status: "draft" | "published";
   organizerName: string;
   organizerId: string;
+  /** Published activities on or after the simulated today. */
   upcomingActivities: { slug: string; title: string; date: string; startTime: string }[];
+  /** Published activities that already happened on the simulated clock, newest first. */
+  pastActivities: { slug: string; title: string; date: string; startTime: string }[];
   projects: { slug: string; title: string; status: "active" | "completed"; volunteersNeeded: number; volunteerCount: number }[];
   viewerMembership: ViewerMembership;
 }
@@ -105,7 +124,8 @@ export async function getCommunityBySlug(
     status: community.status === "DRAFT" ? "draft" : "published",
     organizerName: community.organizer.name,
     organizerId: community.organizerId,
-    upcomingActivities: community.activities,
+    upcomingActivities: community.activities.filter((a) => a.date >= SIMULATED_NOW_ISO),
+    pastActivities: community.activities.filter((a) => a.date < SIMULATED_NOW_ISO).reverse(),
     projects: community.projects.map((p) => ({
       slug: p.slug,
       title: p.title,

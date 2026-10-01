@@ -12,7 +12,8 @@
  * stated here and in the assistant UI, never hidden.
  */
 import type { ActivityCategory } from "@/lib/types";
-import type { DayBucket } from "@/lib/data/recommendations";
+import type { TimeWindow } from "@/lib/time-window";
+import { extractConstraints, type SearchConstraints } from "./constraints";
 
 export type AssistantIntentType = "find-activities" | "find-people" | "bridge-question" | "unknown";
 
@@ -24,7 +25,9 @@ export interface CommunityMention {
 export interface AssistantIntent {
   type: AssistantIntentType;
   category?: ActivityCategory;
-  when?: DayBucket;
+  when?: TimeWindow;
+  /** Everything the text states explicitly — location, date, cost, accessibility, eligibility. */
+  constraints: SearchConstraints;
   accessibility?: string[];
   nearMe: boolean;
   /** A city/place mentioned that isn't Prishtina — signals "no seeded records for that location." */
@@ -42,6 +45,7 @@ const CATEGORY_KEYWORDS: Record<ActivityCategory, string[]> = {
   community: ["community", "neighborhood", "komunitet", "lagje"],
 };
 
+// Kept for reference of supported phrasings; parsing is done by extractConstraints().
 const WEEKEND_KEYWORDS = [
   "saturday",
   "sunday",
@@ -105,13 +109,10 @@ export function parseAssistantIntent(rawQuery: string): AssistantIntent {
     }
   }
 
-  const when: DayBucket | undefined = includesAny(q, WEEKEND_KEYWORDS)
-    ? "weekend"
-    : includesAny(q, WEEKDAY_KEYWORDS)
-      ? "weekday"
-      : undefined;
+  const constraints = extractConstraints(rawQuery);
+  const when: TimeWindow | undefined = constraints.window;
 
-  const accessibility = includesAny(q, ACCESSIBILITY_KEYWORDS) ? ["wheelchair-accessible"] : undefined;
+  const accessibility = constraints.accessibility;
   const nearMe = Boolean(includesAny(q, NEAR_ME_KEYWORDS));
 
   const outOfScopeLocation = OTHER_KNOWN_CITIES.find((city) => q.includes(city));
@@ -125,7 +126,7 @@ export function parseAssistantIntent(rawQuery: string): AssistantIntent {
   const isBridgeQuestion = Boolean(includesAny(q, BRIDGE_KEYWORDS)) && communityMentions.length >= 2;
   const isPeopleQuery = Boolean(includesAny(q, PEOPLE_KEYWORDS));
   const hasAnySignal = Boolean(
-    category || when || accessibility || nearMe || outOfScopeLocation || communityMentions.length > 0
+    category || when || accessibility || constraints.area || constraints.cost || nearMe || outOfScopeLocation || communityMentions.length > 0
   );
   // Only genuinely ambiguous input (empty, a bare greeting, or otherwise no
   // extractable signal at all) asks for clarification — a longer query with
@@ -149,6 +150,7 @@ export function parseAssistantIntent(rawQuery: string): AssistantIntent {
     type,
     category,
     when,
+    constraints,
     accessibility,
     nearMe,
     outOfScopeLocation,

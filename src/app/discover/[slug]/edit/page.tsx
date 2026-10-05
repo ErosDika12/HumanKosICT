@@ -1,10 +1,14 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActivityForm } from "@/components/ActivityForm";
 import { getActivityBySlug } from "@/lib/data/activities";
 import { getCommunityBySlug } from "@/lib/data/communities";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { demoLoginAction } from "@/lib/auth/actions";
 import { updateActivityAction, cancelActivityAction } from "@/lib/actions/organizer-activity-actions";
+import { buttonClass } from "@/components/ui";
+import { getI18n } from "@/lib/i18n/server";
+import { errorMessage } from "@/lib/i18n/errors";
+import { localizeActivity } from "@/lib/i18n/content";
 
 export default async function EditActivityPage({
   params,
@@ -15,24 +19,23 @@ export default async function EditActivityPage({
 }) {
   const { slug } = await params;
   const { error } = await searchParams;
+  const { t, locale } = await getI18n();
   const activity = await getActivityBySlug(slug);
   if (!activity) notFound();
 
   const user = await getCurrentUser();
-  // A UX-only shortcut for the warning banner below — the authoritative
-  // check happens server-side in assertCommunityOrganizer on submit
-  // regardless of what this page shows.
+  // A UX-only hint — the authoritative organizer check happens server-side on submit.
   const community = user ? await getCommunityBySlug(activity.communitySlug, user.id) : null;
   const isOrganizer = community?.viewerMembership === "organizer";
+  const errText = errorMessage(t, error);
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <p className="text-sm text-foreground-muted">
-          <Link href={`/login?next=${encodeURIComponent(`/discover/${slug}/edit`)}`} className="underline underline-offset-2">
-            Sign in
-          </Link>{" "}
-          as this activity&apos;s organizer to edit it.
-        </p>
+        <form action={demoLoginAction}>
+          <button type="submit" className={buttonClass("accent", "md")}>
+            {t("form.loginToContinue")}
+          </button>
+        </form>
       </div>
     );
   }
@@ -40,24 +43,20 @@ export default async function EditActivityPage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold text-foreground">Edit {activity.title}</h1>
+        <h1 className="font-display text-2xl font-semibold text-foreground">{t("form.editEvent.title", { name: localizeActivity(activity, locale).title })}</h1>
         <form action={cancelActivityAction}>
           <input type="hidden" name="slug" value={slug} />
-          <button type="submit" className="rounded-lg border border-danger px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger-tint">
-            Cancel this event
+          <button type="submit" className="min-h-10 rounded-full border border-danger px-4 py-1.5 text-sm font-medium text-danger hover:bg-danger-tint">
+            {t("form.editEvent.cancel")}
           </button>
         </form>
       </div>
-      {error && (
+      {errText && (
         <p role="alert" className="text-sm text-danger">
-          {error}
+          {errText}
         </p>
       )}
-      {!isOrganizer && (
-        <p className="text-sm text-foreground-muted">
-          If you&apos;re not this event&apos;s organizer, saving will be refused server-side.
-        </p>
-      )}
+      {!isOrganizer && <p className="text-sm text-foreground-muted">{t("form.editEvent.notOrganizer")}</p>}
       <ActivityForm
         action={updateActivityAction}
         activitySlug={slug}

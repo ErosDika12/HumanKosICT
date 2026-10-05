@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { getCommunityBySlug } from "@/lib/data/communities";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createProjectAction } from "@/lib/actions/project-actions";
+import { Field, FormCard, SubmitButton, TextArea } from "@/components/form-fields";
+import { getI18n } from "@/lib/i18n/server";
+import { errorMessage } from "@/lib/i18n/errors";
 
 export default async function NewProjectPage({
   params,
@@ -13,17 +16,19 @@ export default async function NewProjectPage({
 }) {
   const { slug } = await params;
   const { error } = await searchParams;
+  const { t } = await getI18n();
   const user = await getCurrentUser();
   const community = await getCommunityBySlug(slug, user?.id);
   if (!community) notFound();
+  const errText = errorMessage(t, error);
 
   if (!user || community.viewerMembership !== "organizer") {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
         <p className="text-sm text-foreground-muted">
-          Only {community.name}&apos;s organizer can start a project.{" "}
+          {t("form.onlyOrganizer")}{" "}
           <Link href={`/communities/${slug}`} className="underline underline-offset-2">
-            Back to community
+            {t("form.backToCommunity")}
           </Link>
         </p>
       </div>
@@ -32,40 +37,21 @@ export default async function NewProjectPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
-        New project for {community.name}
-      </h1>
-      {error && (
+      <h1 className="font-display text-2xl font-semibold text-foreground">{t("form.newProject.title", { name: community.name })}</h1>
+      {errText && (
         <p role="alert" className="text-sm text-danger">
-          {error}
+          {errText}
         </p>
       )}
-      <form action={createProjectAction} className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5">
+      <FormCard action={createProjectAction}>
         <input type="hidden" name="communitySlug" value={slug} />
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">Title (English)</span>
-          <input type="text" name="title" required className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">Title (Albanian)</span>
-          <input type="text" name="titleSq" required className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">Description (English)</span>
-          <textarea name="description" required rows={3} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">Description (Albanian)</span>
-          <textarea name="descriptionSq" required rows={3} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">Volunteers needed</span>
-          <input type="number" name="volunteersNeeded" min={1} defaultValue={5} required className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </label>
-        <button type="submit" className="inline-flex w-fit items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-strong">
-          Create project
-        </button>
-      </form>
+        <Field label={t("form.titleEn")} name="title" required />
+        <Field label={t("form.titleSq")} name="titleSq" required />
+        <TextArea label={t("form.descEn")} name="description" required />
+        <TextArea label={t("form.descSq")} name="descriptionSq" required />
+        <Field label={t("form.volunteersNeeded")} name="volunteersNeeded" type="number" min={1} defaultValue={5} required />
+        <SubmitButton>{t("form.newProject.submit")}</SubmitButton>
+      </FormCard>
     </div>
   );
 }

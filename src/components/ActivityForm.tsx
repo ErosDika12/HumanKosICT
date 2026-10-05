@@ -1,29 +1,12 @@
-import { INTERESTS } from "@/lib/types";
+import { INTERESTS, interestLabel } from "@/lib/types";
 import type { DemoActivity } from "@/lib/types";
+import { Field, FormCard, SelectField, SubmitButton, TextArea } from "@/components/form-fields";
+import { getI18n } from "@/lib/i18n/server";
 
-const CATEGORIES = [
-  { id: "technology", label: "Technology" },
-  { id: "environment", label: "Environment" },
-  { id: "sports", label: "Sports" },
-  { id: "education", label: "Education" },
-  { id: "culture", label: "Culture" },
-  { id: "community", label: "Community" },
-];
-
+const CATEGORIES = ["technology", "environment", "sports", "education", "culture", "community"] as const;
 const ACCESSIBILITY_TAGS = ["wheelchair-accessible", "quiet-space-available", "captioned"];
-
-const AGE_OPTIONS: { id: DemoActivity["ageEligibility"]; label: string }[] = [
-  { id: "all-ages", label: "All ages" },
-  { id: "adults-only", label: "Adults only" },
-  { id: "supervised-minors", label: "Supervised minors (school/guardian-supervised only)" },
-];
-
-const DIFFICULTY_OPTIONS: { id: DemoActivity["difficulty"]; label: string }[] = [
-  { id: "beginner", label: "Beginner" },
-  { id: "intermediate", label: "Intermediate" },
-  { id: "advanced", label: "Advanced" },
-  { id: "all-levels", label: "All levels" },
-];
+const AGE_OPTIONS: DemoActivity["ageEligibility"][] = ["all-ages", "adults-only", "supervised-minors"];
+const DIFFICULTY_OPTIONS: DemoActivity["difficulty"][] = ["beginner", "intermediate", "advanced", "all-levels"];
 
 export interface ActivityFormValues {
   title: string;
@@ -52,10 +35,10 @@ export interface ActivityFormValues {
 
 /**
  * Shared create/edit form for organizer-authored activities. A plain
- * server-rendered <form> — no client JS required — posting directly to a
- * bound server action (createActivityAction or updateActivityAction).
+ * server-rendered <form> posting to a bound server action. It collects both
+ * English and Albanian text so the activity can be shown in either language.
  */
-export function ActivityForm({
+export async function ActivityForm({
   action,
   communitySlug,
   activitySlug,
@@ -66,155 +49,103 @@ export function ActivityForm({
   activitySlug?: string;
   defaults?: Partial<ActivityFormValues>;
 }) {
+  const { t, locale } = await getI18n();
   return (
-    <form action={action} className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5">
+    <FormCard action={action}>
       {communitySlug && <input type="hidden" name="communitySlug" value={communitySlug} />}
       {activitySlug && <input type="hidden" name="slug" value={activitySlug} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Title (English)" name="title" defaultValue={defaults?.title} required />
-        <Field label="Title (Albanian)" name="titleSq" defaultValue={defaults?.titleSq} required />
+        <Field label={t("form.titleEn")} name="title" defaultValue={defaults?.title} required />
+        <Field label={t("form.titleSq")} name="titleSq" defaultValue={defaults?.titleSq} required />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Summary (English)" name="summary" defaultValue={defaults?.summary} required />
-        <Field label="Summary (Albanian)" name="summarySq" defaultValue={defaults?.summarySq} required />
+        <Field label={t("form.summaryEn")} name="summary" defaultValue={defaults?.summary} required />
+        <Field label={t("form.summarySq")} name="summarySq" defaultValue={defaults?.summarySq} required />
       </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Category</span>
-        <select name="category" defaultValue={defaults?.category ?? "community"} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-          {CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField label={t("form.category")} name="category" defaultValue={defaults?.category ?? "community"}>
+        {CATEGORIES.map((c) => (
+          <option key={c} value={c}>
+            {t(`category.${c}`)}
+          </option>
+        ))}
+      </SelectField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Area (English)" name="areaEn" defaultValue={defaults?.areaEn} placeholder="Prishtina — Dardania" required />
-        <Field label="Area (Albanian)" name="areaSq" defaultValue={defaults?.areaSq} placeholder="Prishtinë — Dardania" required />
+        <Field label={t("form.areaEn")} name="areaEn" defaultValue={defaults?.areaEn} placeholder="Prishtina — Dardania" required />
+        <Field label={t("form.areaSq")} name="areaSq" defaultValue={defaults?.areaSq} placeholder="Prishtinë — Dardania" required />
       </div>
-      <Field label="Venue name" name="venueName" defaultValue={defaults?.venueName} required />
+      <Field label={t("form.venue")} name="venueName" defaultValue={defaults?.venueName} required />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Latitude" name="lat" type="number" step="any" defaultValue={defaults?.lat?.toString()} placeholder="42.6653" required />
-        <Field label="Longitude" name="lng" type="number" step="any" defaultValue={defaults?.lng?.toString()} placeholder="21.1622" required />
+        <Field label={t("form.lat")} name="lat" type="number" step="any" defaultValue={defaults?.lat} placeholder="42.6653" required />
+        <Field label={t("form.lng")} name="lng" type="number" step="any" defaultValue={defaults?.lng} placeholder="21.1622" required />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Date (YYYY-MM-DD)" name="date" defaultValue={defaults?.date} placeholder="2036-06-22" required />
-        <Field label="Start time (HH:MM)" name="startTime" defaultValue={defaults?.startTime} placeholder="18:00" required />
+        <Field label={t("form.date")} name="date" defaultValue={defaults?.date} placeholder="2036-06-22" required />
+        <Field label={t("form.time")} name="startTime" defaultValue={defaults?.startTime} placeholder="18:00" required />
       </div>
-      <Field label="Capacity" name="capacity" type="number" min={1} defaultValue={defaults?.capacity?.toString()} required />
+      <Field label={t("form.capacity")} name="capacity" type="number" min={1} defaultValue={defaults?.capacity} required />
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium text-foreground">Cost</legend>
+        <legend className="text-sm font-medium text-foreground">{t("form.cost")}</legend>
         <label className="flex items-center gap-2 text-sm">
           <input type="radio" name="cost" value="free" defaultChecked={!defaults || defaults.cost === "free"} />
-          Free
+          {t("fact.free")}
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="radio" name="cost" value="paid" defaultChecked={defaults?.cost === "paid"} />
-          Paid
+          {t("fact.paid")}
         </label>
-        <Field label="Cost detail (required if paid)" name="costDetail" defaultValue={defaults?.costDetail} placeholder="€2 suggested donation" />
+        <Field label={t("form.costDetail")} name="costDetail" defaultValue={defaults?.costDetail} placeholder={t("form.costPlaceholder")} />
       </fieldset>
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="indoor" defaultChecked={defaults?.indoor ?? true} />
-        Indoor
+        {t("form.indoor")}
       </label>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium text-foreground">Accessibility</legend>
+        <legend className="text-sm font-medium text-foreground">{t("form.accessibility")}</legend>
         {ACCESSIBILITY_TAGS.map((tag) => (
-          <label key={tag} className="flex items-center gap-2 text-sm capitalize">
+          <label key={tag} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="accessibility" value={tag} defaultChecked={defaults?.accessibility?.includes(tag)} />
-            {tag.replace(/-/g, " ")}
+            {t(`access.${tag}`)}
           </label>
         ))}
       </fieldset>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Age eligibility</span>
-        <select name="ageEligibility" defaultValue={defaults?.ageEligibility ?? "all-ages"} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-          {AGE_OPTIONS.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField label={t("form.age")} name="ageEligibility" defaultValue={defaults?.ageEligibility ?? "all-ages"}>
+        {AGE_OPTIONS.map((a) => (
+          <option key={a} value={a}>
+            {a === "supervised-minors" ? t("form.ageMinors") : t(`age.${a}`)}
+          </option>
+        ))}
+      </SelectField>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Difficulty</span>
-        <select name="difficulty" defaultValue={defaults?.difficulty ?? "all-levels"} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-          {DIFFICULTY_OPTIONS.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField label={t("form.difficulty")} name="difficulty" defaultValue={defaults?.difficulty ?? "all-levels"}>
+        {DIFFICULTY_OPTIONS.map((d) => (
+          <option key={d} value={d}>
+            {t(`difficulty.${d}`)}
+          </option>
+        ))}
+      </SelectField>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Description (English)</span>
-        <textarea name="description" defaultValue={defaults?.description} rows={3} required className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Description (Albanian)</span>
-        <textarea name="descriptionSq" defaultValue={defaults?.descriptionSq} rows={3} required className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-      </label>
+      <TextArea label={t("form.descEn")} name="description" defaultValue={defaults?.description} required />
+      <TextArea label={t("form.descSq")} name="descriptionSq" defaultValue={defaults?.descriptionSq} required />
 
       <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <legend className="col-span-full text-sm font-medium text-foreground">Related interests</legend>
+        <legend className="col-span-full text-sm font-medium text-foreground">{t("form.interests")}</legend>
         {INTERESTS.map((i) => (
           <label key={i.id} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="interestTags" value={i.id} defaultChecked={defaults?.interestTags?.includes(i.id)} />
-            {i.emoji} {i.labelEn}
+            {i.emoji} {interestLabel(i, locale)}
           </label>
         ))}
       </fieldset>
 
-      <button type="submit" className="inline-flex w-fit items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-strong">
-        {activitySlug ? "Save changes" : "Create event"}
-      </button>
-    </form>
-  );
-}
-
-function Field({
-  label,
-  name,
-  defaultValue,
-  required,
-  placeholder,
-  type = "text",
-  step,
-  min,
-}: {
-  label: string;
-  name: string;
-  defaultValue?: string;
-  required?: boolean;
-  placeholder?: string;
-  type?: string;
-  step?: string;
-  min?: number;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-foreground">{label}</span>
-      <input
-        type={type}
-        name={name}
-        defaultValue={defaultValue}
-        required={required}
-        placeholder={placeholder}
-        step={step}
-        min={min}
-        className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-      />
-    </label>
+      <SubmitButton>{activitySlug ? t("form.saveChanges") : t("form.createEvent")}</SubmitButton>
+    </FormCard>
   );
 }

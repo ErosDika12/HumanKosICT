@@ -7,6 +7,8 @@ import { demoLoginAction } from "@/lib/auth/actions";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listActivities } from "@/lib/data/activities";
 import { listPlans } from "@/lib/data/invites";
+import { getProgress } from "@/lib/data/progress";
+import { HumanQuest } from "@/components/HumanQuest";
 import { getUserInterests } from "@/lib/data/interests";
 import { scoreActivities } from "@/lib/data/recommendations";
 import { photoForActivity } from "@/lib/photos";
@@ -29,10 +31,11 @@ const RELATIVE_KEY: Record<string, string> = {
 export default async function HomePage() {
   const { t, locale, shortDate } = await getI18n();
   const user = await getCurrentUser();
-  const [all, plans, interestIds] = await Promise.all([
+  const [all, plans, interestIds, progress] = await Promise.all([
     listActivities(),
     user ? listPlans(user.id) : Promise.resolve([]),
     user ? getUserInterests(user.id) : Promise.resolve([]),
+    user ? getProgress(user.id) : Promise.resolve(null),
   ]);
   const upcoming = all.filter((a) => !isSimulatedPast(a.date));
   const featured = FEATURED_SLUGS.map((s) => upcoming.find((a) => a.slug === s)).filter((a) => a !== undefined);
@@ -106,6 +109,7 @@ export default async function HomePage() {
                 </ul>
               </div>
             </div>
+            {progress && <HumanQuest progress={progress} compact />}
           </div>
         </section>
       ) : (

@@ -70,10 +70,11 @@ const ACTIVITY_PHOTO: Record<string, PhotoKey> = {
   "darke-e-perbashket-sunny-hill": "boulevard",
   "basketboll-i-hapur-lakrishte": "basketball",
   "turne-basketbolli-3x3": "basketball",
-  "ecje-me-biciklete-ulpiana": "germia",
-  "laborator-ideshe-eko-teknologji": "youthcenter",
+  "ecje-me-biciklete-ulpiana": "cycling",
+  "laborator-ideshe-eko-teknologji": "germia",
   "nate-e-te-dhenave-qytetare": "night",
-  "robotike-per-familje": "library",
+  "robotike-per-familje": "robots",
+  "kodim-per-adoleshente": "robots",
   "punetori-fotografie-me-telefon": "boulevard",
 };
 

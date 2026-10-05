@@ -64,7 +64,7 @@ export async function BridgeStory({ showcase, signedIn }: { showcase: BridgeShow
             </Link>
           </p>
           <details className="mt-2 text-sm text-foreground-muted">
-            <summary className="cursor-pointer font-medium text-foreground">{t("bridge.why")}</summary>
+            <summary className="cursor-pointer py-2 font-medium text-foreground">{t("bridge.why")}</summary>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">
               {reasons.map((r) => (
                 <li key={r}>{r}</li>

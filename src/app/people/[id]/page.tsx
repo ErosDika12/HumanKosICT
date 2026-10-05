@@ -61,7 +61,7 @@ export default async function FriendProfilePage({
 
   return (
     <PageShell className="max-w-5xl">
-      <Link href="/people" className="text-sm font-medium text-brand-strong underline underline-offset-2">
+      <Link href="/people" className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
         ← {t("friends.back")}
       </Link>
 

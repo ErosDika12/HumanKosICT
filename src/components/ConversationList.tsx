@@ -8,7 +8,7 @@ import { localizeText } from "@/lib/i18n/content";
 export async function ConversationList({ threads, activeId }: { threads: ThreadSummary[]; activeId?: string }) {
   const { t, locale } = await getI18n();
   return (
-    <nav aria-label={t("messages.conversations")} className="flex flex-col">
+    <nav aria-label={t("messages.conversations")} className="flex min-w-0 flex-col">
       <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
         {threads.map((th) => {
           const active = th.friendId === activeId;

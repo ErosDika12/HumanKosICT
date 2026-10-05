@@ -105,7 +105,7 @@ export default async function InboxPage() {
                 <div className="mt-1 flex items-center justify-between text-xs text-foreground-muted">
                   <span>{n.createdAt.toISOString().slice(0, 10)}</span>
                   {n.activitySlug && (
-                    <Link href={`/discover/${n.activitySlug}`} className="underline underline-offset-2">
+                    <Link href={`/discover/${n.activitySlug}`} className="inline-block py-1.5 underline underline-offset-2">
                       {t("action.viewActivity")}
                     </Link>
                   )}

@@ -96,7 +96,7 @@ export default async function ActivityDetailPage({
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-      <Link href="/discover" className="text-sm font-medium text-brand-strong underline underline-offset-2">
+      <Link href="/discover" className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
         ← {t("activity.back")}
       </Link>
 
@@ -188,12 +188,12 @@ export default async function ActivityDetailPage({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-lg font-semibold text-foreground">
                   {t("activity.organizedBy")}{" "}
-                  <Link href={`/communities/${community.slug}`} className="text-brand-strong underline underline-offset-2">
+                  <Link href={`/communities/${community.slug}`} className="inline-block py-1.5 text-brand-strong underline underline-offset-2">
                     {community.name}
                   </Link>
                 </h2>
                 {isOrganizer && (
-                  <Link href={`/discover/${slug}/edit`} className="text-sm text-brand-strong underline underline-offset-2">
+                  <Link href={`/discover/${slug}/edit`} className="inline-block py-1.5 text-sm text-brand-strong underline underline-offset-2">
                     {t("activity.editEvent")}
                   </Link>
                 )}

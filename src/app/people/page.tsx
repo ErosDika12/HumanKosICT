@@ -151,7 +151,7 @@ export default async function PeoplePage({
                   {idea && ideaText && (
                     <div className="rounded-2xl border border-border bg-surface-muted p-3 text-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">{t("friends.suggestActivity")}</p>
-                      <Link href={`/discover/${idea.activity.slug}`} className="mt-1 block font-semibold text-foreground hover:underline">
+                      <Link href={`/discover/${idea.activity.slug}`} className="mt-1 block py-1.5 font-semibold text-foreground hover:underline">
                         {ideaText.title}
                       </Link>
                       <p className="text-xs text-foreground-muted">

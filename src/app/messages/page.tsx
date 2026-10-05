@@ -51,7 +51,7 @@ export default async function MessagesPage() {
           {t("messages.none.body")}
         </EmptyState>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
           <ConversationList threads={threads} />
           <div className="hidden min-h-64 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-muted text-center text-foreground-muted lg:flex">
             <ChatIcon size={28} />

@@ -36,7 +36,7 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href={`/communities/${project.communitySlug}`} className="text-sm font-medium text-brand-strong underline underline-offset-2">
+      <Link href={`/communities/${project.communitySlug}`} className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
         ← {t("project.back", { name: project.communityName })}
       </Link>
 

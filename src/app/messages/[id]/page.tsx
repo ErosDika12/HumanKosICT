@@ -42,7 +42,7 @@ export default async function ThreadPage({
 
   return (
     <PageShell className="max-w-5xl">
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* Desktop keeps the list beside the chat; on a phone only the open conversation is shown. */}
         <div className="hidden lg:block">
           <ConversationList threads={threads} activeId={id} />

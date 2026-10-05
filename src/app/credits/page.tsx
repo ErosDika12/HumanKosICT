@@ -28,14 +28,14 @@ export default async function CreditsPage() {
                 <p className="text-foreground-muted">
                   {p.author} ·{" "}
                   {p.licenseUrl ? (
-                    <a href={p.licenseUrl} className="underline" rel="noopener noreferrer">
+                    <a href={p.licenseUrl} className="inline-block py-1 underline" rel="noopener noreferrer">
                       {p.license}
                     </a>
                   ) : (
                     p.license
                   )}
                 </p>
-                <a href={p.source} className="mt-auto text-xs text-brand-strong underline" rel="noopener noreferrer">
+                <a href={p.source} className="mt-auto inline-block py-1.5 text-sm text-brand-strong underline" rel="noopener noreferrer">
                   {t("credits.source")}
                 </a>
               </div>

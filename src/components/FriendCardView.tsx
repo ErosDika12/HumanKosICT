@@ -19,7 +19,7 @@ export async function FriendCardView({ card, mode }: { card: FriendCard; mode: "
         <Avatar name={card.name} size={48} />
         <div className="min-w-0">
           <h3 className="font-display text-lg font-semibold leading-tight text-foreground">
-            <Link href={`/people/${card.id}`} className="hover:underline">
+            <Link href={`/people/${card.id}`} className="inline-block py-1 hover:underline">
               {card.name}
             </Link>
           </h3>

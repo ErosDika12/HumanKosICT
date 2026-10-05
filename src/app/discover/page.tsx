@@ -224,7 +224,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
             </FilterRow>
           )}
           <div>
-            <Link href={hrefWith(current, "past", includePast ? undefined : "1")} scroll={false} className="text-sm font-medium text-brand-strong underline underline-offset-2">
+            <Link href={hrefWith(current, "past", includePast ? undefined : "1")} scroll={false} className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
               {includePast ? t("discover.hidePast") : t("filter.includePast")}
             </Link>
           </div>

@@ -153,7 +153,7 @@ export default async function HomePage() {
               <h2 id="soon-title" className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {t("home.soon.title")}
               </h2>
-              <Link href="/discover" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
+              <Link href="/discover" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
                 {t("home.soon.all")}
                 <ArrowIcon size={16} />
               </Link>

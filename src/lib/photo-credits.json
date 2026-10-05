@@ -70,5 +70,23 @@
     "source": "https://commons.wikimedia.org/wiki/File:3x3_basketball_Katowice_2024_jeh.jpg",
     "alt": "Players in a 3x3 street basketball game on an outdoor court",
     "place": "illustrative (Katowice, Poland)"
+  },
+  "robots": {
+    "title": "Ozobot.jpeg",
+    "author": "-stk",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:Ozobot.jpeg",
+    "alt": "Children and a small programmable robot following a drawn line at a workshop table",
+    "place": "Illustrative — not in Prishtina"
+  },
+  "cycling": {
+    "title": "Family Rides Bike Together During COVID19 Quarantine.jpg",
+    "author": "Anthony Quintano",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Family_Rides_Bike_Together_During_COVID19_Quarantine.jpg",
+    "alt": "A parent and child riding a bicycle together along a city street",
+    "place": "Illustrative — not in Prishtina"
   }
 }

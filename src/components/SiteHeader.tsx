@@ -56,7 +56,7 @@ function DemoLoginButton({ className = "" }: { className?: string }) {
   const { t } = useI18n();
   return (
     <form action={demoLoginAction}>
-      <button type="submit" className={buttonClass("accent", "sm", className)}>
+      <button type="submit" className={buttonClass("accent", "sm", `whitespace-nowrap ${className}`)}>
         {t("action.demoLogin")}
       </button>
     </form>

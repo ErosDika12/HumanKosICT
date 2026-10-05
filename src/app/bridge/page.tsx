@@ -54,7 +54,7 @@ export default async function BridgePage() {
             <Pill tone={STATUS_TONE[featured.status]}>{t(`bridge.status.${featured.status}`)}</Pill>
           </div>
           <BridgeStory showcase={featured} signedIn={Boolean(user)} />
-          <Link href={`/bridge/${featured.id}`} className="inline-flex w-fit items-center gap-1 text-sm font-medium text-brand-strong underline underline-offset-2">
+          <Link href={`/bridge/${featured.id}`} className="inline-flex min-h-10 w-fit items-center gap-1 text-sm font-medium text-brand-strong underline underline-offset-2">
             {t("bridge.full")}
             <ArrowIcon size={14} />
           </Link>

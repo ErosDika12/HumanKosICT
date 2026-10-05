@@ -35,7 +35,7 @@ export default async function BridgeProposalPage({
 
   return (
     <PageShell className="max-w-4xl">
-      <Link href="/bridge" className="text-sm font-medium text-brand-strong underline underline-offset-2">
+      <Link href="/bridge" className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
         ← {t("bridge.back")}
       </Link>
 

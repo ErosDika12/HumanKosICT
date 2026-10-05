@@ -103,7 +103,7 @@ export default async function NeedsPage({
                 {n.communityName && ` · ${n.communityName}`}
               </p>
               {n.bridgeProposalId && (
-                <Link href={`/bridge/${n.bridgeProposalId}`} className="mt-1 inline-block text-xs text-brand-strong underline underline-offset-2">
+                <Link href={`/bridge/${n.bridgeProposalId}`} className="mt-1 inline-block py-2 text-sm text-brand-strong underline underline-offset-2">
                   {t("needs.bridgeLink")}
                 </Link>
               )}

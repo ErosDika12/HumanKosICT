@@ -55,7 +55,7 @@ export default async function CommunityDetailPage({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href="/communities" className="text-sm font-medium text-brand-strong underline underline-offset-2">
+      <Link href="/communities" className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
         ← {t("community.back")}
       </Link>
 
@@ -177,7 +177,7 @@ export default async function CommunityDetailPage({
           <ul className="mt-2 flex flex-col gap-2">
             {community.upcomingActivities.map((a) => (
               <li key={a.slug}>
-                <Link href={`/discover/${a.slug}`} className="text-sm font-medium text-brand-strong underline underline-offset-2">
+                <Link href={`/discover/${a.slug}`} className="inline-block py-2 text-sm font-medium text-brand-strong underline underline-offset-2">
                   {titleOf(a)}
                 </Link>
                 <span className="ml-2 text-xs text-foreground-muted">
@@ -195,7 +195,7 @@ export default async function CommunityDetailPage({
           <ul className="mt-2 flex flex-col gap-2">
             {community.pastActivities.map((a) => (
               <li key={a.slug}>
-                <Link href={`/discover/${a.slug}`} className="text-sm text-brand-strong underline underline-offset-2">
+                <Link href={`/discover/${a.slug}`} className="inline-block py-1.5 text-sm text-brand-strong underline underline-offset-2">
                   {titleOf(a)}
                 </Link>
                 <span className="ml-2 text-xs text-foreground-muted">
@@ -215,7 +215,7 @@ export default async function CommunityDetailPage({
           <ul className="mt-2 flex flex-col gap-2">
             {community.projects.map((p) => (
               <li key={p.slug} className="flex items-center justify-between gap-3 text-sm">
-                <Link href={`/projects/${p.slug}`} className="font-medium text-brand-strong underline underline-offset-2">
+                <Link href={`/projects/${p.slug}`} className="inline-block py-1.5 font-medium text-brand-strong underline underline-offset-2">
                   {locale === "sq" ? p.titleSq : localizeText(p.title, locale)}
                 </Link>
                 <span className="shrink-0 text-xs text-foreground-muted">{t("community.volunteers", { n: p.volunteerCount, total: p.volunteersNeeded })}</span>
@@ -231,7 +231,7 @@ export default async function CommunityDetailPage({
           <ul className="mt-2 flex flex-col gap-2">
             {bridgeProposals.map((p) => (
               <li key={p.id} className="text-sm">
-                <Link href={`/bridge/${p.id}`} className="text-brand-strong underline underline-offset-2">
+                <Link href={`/bridge/${p.id}`} className="inline-block py-1.5 text-brand-strong underline underline-offset-2">
                   {p.communityAName} × {p.communityBName}
                 </Link>{" "}
                 <span className="text-xs text-foreground-muted">({t(`bridge.status.${p.status}`)})</span>

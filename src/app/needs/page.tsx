@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
 import { listNeeds, findSimilarOpenNeed } from "@/lib/data/needs";
 import { ensureBridgeProposals } from "@/lib/data/bridge";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -34,7 +33,6 @@ export default async function NeedsPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
         <h1 className="font-display text-3xl font-semibold text-foreground">Community needs</h1>
         <p className="text-sm text-foreground-muted">
           Nevojat e komunitetit — never shows who submitted a need, only its area, category, and

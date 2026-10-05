@@ -32,7 +32,7 @@ function Switcher({ className = "" }: { className?: string }) {
             hrefLang={code}
             aria-current={active ? "true" : undefined}
             title={LOCALE_NAME[code]}
-            className={`inline-flex min-h-8 min-w-9 items-center justify-center rounded-full px-2.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-full px-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
               active ? "bg-brand text-white" : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
             }`}
           >

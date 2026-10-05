@@ -202,7 +202,6 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
             ))}
           </ul>
         )}
-        <p className="text-xs text-foreground-muted">{t("plans.reminder")}</p>
       </section>
 
       {past.length > 0 && (
@@ -219,7 +218,6 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </ul>
         </section>
       )}
-      <p className="text-xs text-foreground-muted">{t("friends.note")}</p>
     </PageShell>
   );
 }

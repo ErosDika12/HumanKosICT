@@ -59,7 +59,6 @@ export default async function MessagesPage() {
           </div>
         </div>
       )}
-      <p className="text-xs text-foreground-muted">{t("friends.note")}</p>
     </PageShell>
   );
 }

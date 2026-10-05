@@ -24,8 +24,8 @@ export const social = {
 
   // Friends page
   "friends.title": { en: "Friends", sq: "Miqtë", sr: "Prijatelji" },
-  "friends.lead": { en: "Meet demo friends who share your interests, then invite one to an activity that suits you both.", sq: "Njihu me miq demo që ndajnë interesat e tua, pastaj fto një në një aktivitet që ju përshtatet të dyve.", sr: "Upoznajte demo prijatelje koji dele vaša interesovanja, pa pozovite jednog na aktivnost koja odgovara obojici." },
-  "friends.guestLead": { en: "Log in as demo to see which fictional friends share your interests and to invite one to an activity.", sq: "Hyr si demo për të parë cilët miq fiktivë ndajnë interesat e tua dhe për të ftuar një në një aktivitet.", sr: "Prijavite se kao demo da vidite koji izmišljeni prijatelji dele vaša interesovanja i da pozovete jednog na aktivnost." },
+  "friends.lead": { en: "Friends who share your interests. Invite one to an activity.", sq: "Miq që ndajnë interesat e tua. Fto një në një aktivitet.", sr: "Prijatelji koji dele vaša interesovanja. Pozovite jednog na aktivnost." },
+  "friends.guestLead": { en: "Log in as demo to see who shares your interests and invite them to an activity.", sq: "Hyr si demo për të parë kush ndan interesat e tua dhe për ta ftuar në një aktivitet.", sr: "Prijavite se kao demo da vidite ko deli vaša interesovanja i pozovete ga na aktivnost." },
   "friends.yours": { en: "Your friends", sq: "Miqtë e tu", sr: "Vaši prijatelji" },
   "friends.suggested": { en: "Suggested for you", sq: "Të sugjeruar për ty", sr: "Predlozi za vas" },
   "friends.none.title": { en: "No friends yet", sq: "Ende pa miq", sr: "Još nema prijatelja" },
@@ -113,7 +113,7 @@ export const social = {
 
   // Messages
   "messages.title": { en: "Messages", sq: "Mesazhet", sr: "Poruke" },
-  "messages.lead": { en: "Direct messages with your friends. Demo friends never reply live.", sq: "Mesazhe direkte me miqtë e tu. Miqtë demo nuk përgjigjen drejtpërdrejt.", sr: "Direktne poruke sa vašim prijateljima. Demo prijatelji ne odgovaraju uživo." },
+  "messages.lead": { en: "Chat with your friends. Demo friends never reply live.", sq: "Bisedo me miqtë e tu. Miqtë demo nuk përgjigjen drejtpërdrejt.", sr: "Razgovarajte sa prijateljima. Demo prijatelji ne odgovaraju uživo." },
   "messages.conversations": { en: "Conversations", sq: "Bisedat", sr: "Razgovori" },
   "messages.none.title": { en: "No conversations yet", sq: "Ende pa biseda", sr: "Još nema razgovora" },
   "messages.none.body": { en: "Add a friend, then write to them from here or from a plan.", sq: "Shto një mik, pastaj shkruaji nga këtu ose nga një plan.", sr: "Dodajte prijatelja, pa mu pišite odavde ili iz plana." },

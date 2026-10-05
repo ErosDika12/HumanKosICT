@@ -112,7 +112,6 @@ export default async function PeoplePage({
               </li>
             ))}
           </ul>
-          <p className="text-xs text-foreground-muted">{t("friends.note")}</p>
         </section>
       </PageShell>
     );
@@ -196,7 +195,6 @@ export default async function PeoplePage({
           </ul>
         )}
       </section>
-      <p className="text-xs text-foreground-muted">{t("friends.note")}</p>
     </PageShell>
   );
 }

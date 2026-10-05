@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { DemoBadge } from "@/components/DemoBadge";
 import { devLoginAction } from "@/lib/auth/actions";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -27,7 +26,6 @@ export default async function DevLoginPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <div className="rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-100">
         <p className="font-semibold">Development only</p>
         <p className="mt-1">

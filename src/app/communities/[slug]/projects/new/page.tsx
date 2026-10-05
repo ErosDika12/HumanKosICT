@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/DemoBadge";
 import { getCommunityBySlug } from "@/lib/data/communities";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createProjectAction } from "@/lib/actions/project-actions";
@@ -21,7 +20,6 @@ export default async function NewProjectPage({
   if (!user || community.viewerMembership !== "organizer") {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <DemoBadge className="self-start" />
         <p className="text-sm text-foreground-muted">
           Only {community.name}&apos;s organizer can start a project.{" "}
           <Link href={`/communities/${slug}`} className="underline underline-offset-2">
@@ -34,7 +32,6 @@ export default async function NewProjectPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <h1 className="font-display text-2xl font-semibold text-foreground">
         New project for {community.name}
       </h1>

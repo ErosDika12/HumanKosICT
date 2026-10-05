@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
 import { AuthorizationError, getCurrentUser, requireRole } from "@/lib/auth/current-user";
 import { listOpenReports } from "@/lib/data/reports";
 import { listPendingActivities, listPendingCommunities } from "@/lib/data/moderation";
@@ -45,7 +44,6 @@ export default async function ModerationPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
 
       <section className="flex flex-col gap-3">
         <h1 className="font-display text-2xl font-semibold text-foreground">
@@ -140,7 +138,6 @@ export default async function ModerationPage() {
 function AccessNote({ message }: { message: React.ReactNode }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <p className="text-sm text-foreground-muted">{message}</p>
     </div>
   );

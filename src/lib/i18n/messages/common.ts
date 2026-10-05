@@ -131,15 +131,10 @@ export const common = {
   "state.fictional": { en: "fictional", sq: "fiktiv", sr: "izmišljen" },
 
   // Footer
-  "footer.disclaimer": {
-    en: "All activities, communities, organizers and city data in this prototype are fictional and exist only for demonstration. Nothing represents real municipal findings or real people.",
-    sq: "Të gjitha aktivitetet, komunitetet, organizatorët dhe të dhënat e qytetit në këtë prototip janë fiktive dhe shërbejnë vetëm për demonstrim. Asgjë nuk përfaqëson gjetje reale komunale apo persona realë.",
-    sr: "Sve aktivnosti, zajednice, organizatori i podaci o gradu u ovom prototipu su izmišljeni i služe samo za demonstraciju. Ništa ne predstavlja stvarne nalaze opštine niti stvarne osobe.",
-  },
-  "footer.clock": {
-    en: "Simulated “today” in this 2036 scenario: {date} — not the real date.",
-    sq: "“Sot” i simuluar në këtë skenar të vitit 2036: {date} — jo data reale.",
-    sr: "Simulirano „danas“ u ovom scenariju iz 2036: {date} — nije stvarni datum.",
+  "footer.disclosure": {
+    en: "Everyone and everything here is fictional. “Today” is simulated: {date}.",
+    sq: "Gjithçka dhe të gjithë këtu janë fiktivë. “Sot” është i simuluar: {date}.",
+    sr: "Sve i svi ovde su izmišljeni. „Danas“ je simulirano: {date}.",
   },
   "footer.nav": { en: "Footer", sq: "Fundi i faqes", sr: "Podnožje" },
 } as const satisfies Catalog;

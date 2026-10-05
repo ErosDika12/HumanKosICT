@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DemoBadge } from "@/components/DemoBadge";
 import { INTERESTS, type InterestId } from "@/lib/types";
 import { saveInterestsAction } from "@/lib/actions/onboarding-actions";
 
@@ -65,7 +64,6 @@ export function OnboardingClient({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <div>
         <h1 className="font-display text-3xl font-semibold text-foreground">
           What do you want to do?

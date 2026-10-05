@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/DemoBadge";
 import { getProjectBySlug } from "@/lib/data/projects";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { joinProjectAction, withdrawProjectAction } from "@/lib/actions/project-actions";
@@ -27,7 +26,6 @@ export default async function ProjectDetailPage({
       </Link>
 
       <div className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
         {created && <p className="text-sm text-success">Project created.</p>}
         <h1 className="font-display text-3xl font-semibold text-foreground">{project.title}</h1>
         <p className="text-sm text-foreground-muted">{project.titleSq}</p>

@@ -120,7 +120,7 @@ export function SiteHeader({
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">
           <Link href="/" className="flex shrink-0 items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-foreground">
             <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm">
               HN
@@ -154,10 +154,11 @@ export function SiteHeader({
             <Link
               href="/assistant"
               aria-current={isActive(pathname, "/assistant") ? "page" : undefined}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+              title={t("nav.assistant")}
+              className="inline-flex items-center rounded-full p-2 text-foreground-muted hover:bg-surface-muted hover:text-foreground"
             >
-              <SparkIcon size={16} />
-              {t("nav.assistant")}
+              <SparkIcon size={18} />
+              <span className="sr-only">{t("nav.assistant")}</span>
             </Link>
             <LanguageSwitcher />
             {user ? (
@@ -207,9 +208,6 @@ export function SiteHeader({
               </>
             ) : (
               <>
-                <Link href="/login" className={buttonClass("ghost", "sm")}>
-                  {t("nav.staffSignIn")}
-                </Link>
                 {devMode && (
                   <Link href="/dev-login" className="px-2 text-xs font-medium text-foreground-muted underline underline-offset-2">
                     {t("nav.devPersonas")}
@@ -222,7 +220,11 @@ export function SiteHeader({
 
           <div className="flex items-center gap-2 lg:hidden">
             <LanguageSwitcher />
-            {!user && <DemoLoginButton className="hidden sm:inline-flex" />}
+            {!user && (
+              <div className="hidden sm:block">
+                <DemoLoginButton />
+              </div>
+            )}
             <button
               type="button"
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-foreground"

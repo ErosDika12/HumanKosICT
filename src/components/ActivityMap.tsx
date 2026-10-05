@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -243,26 +244,11 @@ export function ActivityMap({
 
   if (failed) {
     return (
-      <div role="status" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-muted p-4">
-        <div>
-          <p className="font-medium text-foreground">{t("map.failed.title")}</p>
-          <p className="text-sm text-foreground-muted">{t("map.failed.body")}</p>
-        </div>
-        <ul className="grid max-h-[360px] gap-2 overflow-y-auto sm:grid-cols-2">
-          {activities.slice(0, 12).map((a) => (
-            <li key={a.slug}>
-              <a
-                href={`/discover/${encodeURIComponent(a.slug)}`}
-                className="flex min-h-11 flex-col rounded-xl border border-border bg-surface px-3 py-2 text-sm hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <span className="font-medium text-foreground">{localizeActivity(a, locale).title}</span>
-                <span className="text-xs text-foreground-muted">
-                  {t(`area.${a.areaEn}`)} · {shortDate(a.date)} · {a.startTime}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
+      <div role="status" className="flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface-muted p-4">
+        <p className="text-sm font-medium text-foreground">{t("map.failed.title")}</p>
+        <Link href="/discover" className="inline-flex min-h-10 items-center rounded-full bg-brand px-4 text-sm font-semibold text-white">
+          {t("map.failed.body")}
+        </Link>
       </div>
     );
   }

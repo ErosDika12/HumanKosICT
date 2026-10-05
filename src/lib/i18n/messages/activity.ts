@@ -44,6 +44,7 @@ export const activity = {
   "activity.rsvp.full": { en: "This activity is full", sq: "Ky aktivitet është i plotë", sr: "Ova aktivnost je popunjena" },
   "activity.rsvp.canceledTitle": { en: "This activity was canceled", sq: "Ky aktivitet u anulua", sr: "Ova aktivnost je otkazana" },
   "activity.rsvp.passedTitle": { en: "This activity has passed", sq: "Ky aktivitet ka kaluar", sr: "Ova aktivnost je prošla" },
+  "activity.rsvp.what": { en: "One click. It goes into your plans and you can cancel any time.", sq: "Një klikim. Shkon te planet e tua dhe mund ta anulosh kur të duash.", sr: "Jedan klik. Ulazi u vaše planove i možete ga otkazati bilo kada." },
   "activity.rsvp.saved": { en: "Saved on your account — it stays after a refresh.", sq: "Ruajtur në llogarinë tënde — mbetet edhe pas rifreskimit.", sr: "Sačuvano na vašem nalogu — ostaje i nakon osvežavanja." },
   "activity.rsvp.viewPlan": { en: "View your plan", sq: "Shiko planin tënd", sr: "Pogledaj svoj plan" },
   "activity.rsvp.loginToRsvp": { en: "Log in as demo to RSVP", sq: "Hyr si demo për të konfirmuar", sr: "Prijavite se kao demo da potvrdite dolazak" },
@@ -65,7 +66,7 @@ export const activity = {
   "activity.friend.message": { en: "Message {name}", sq: "Shkruaj {name}", sr: "Piši {name}" },
   "activity.friend.messageTo": { en: "Message to {name}", sq: "Mesazh për {name}", sr: "Poruka za {name}" },
   "activity.friend.placeholder": { en: "Come with me, {name}?", sq: "Eja me mua, {name}?", sr: "Hoćeš li sa mnom, {name}?" },
-  "activity.friend.simNote": { en: "Demo friends never reply live — an invitation gets a labeled, simulated reply based on their listed availability.", sq: "Miqtë demo nuk përgjigjen drejtpërdrejt — ftesa merr një përgjigje të simuluar e të shënuar, bazuar në disponueshmërinë e tyre.", sr: "Demo prijatelji ne odgovaraju uživo — pozivnica dobija označen, simuliran odgovor zasnovan na njihovoj dostupnosti." },
+  "activity.friend.simNote": { en: "Demo friends never reply live; the answer follows their listed availability.", sq: "Miqtë demo nuk përgjigjen drejtpërdrejt; përgjigjja ndjek disponueshmërinë e tyre.", sr: "Demo prijatelji ne odgovaraju uživo; odgovor prati njihovu navedenu dostupnost." },
   "activity.flash.invited": { en: "Invitation sent. It now appears in your plan and in the conversation.", sq: "Ftesa u dërgua. Tani shfaqet te plani yt dhe në bisedë.", sr: "Pozivnica je poslata. Sada se vidi u vašem planu i u razgovoru." },
 
   "invite.pending": { en: "waiting", sq: "në pritje", sr: "na čekanju" },

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DemoBadge } from "@/components/DemoBadge";
 import { Button, Card, Notice, PageShell } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { demoLoginAction, loginAction } from "@/lib/auth/actions";
@@ -19,7 +18,6 @@ export default async function LoginPage({
 
   return (
     <PageShell className="max-w-3xl">
-      <DemoBadge className="self-start" />
       <header>
         <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Sign in</h1>
         <p className="mt-1 text-foreground-muted">

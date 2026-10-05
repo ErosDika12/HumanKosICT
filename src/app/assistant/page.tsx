@@ -1,5 +1,4 @@
 import { AssistantChat } from "@/components/AssistantChat";
-import { DemoBadge } from "@/components/DemoBadge";
 import { Eyebrow, PageShell, Pill } from "@/components/ui";
 import { isAiProviderConfigured } from "@/lib/assistant/ai-provider";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -13,7 +12,6 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
   return (
     <PageShell className="max-w-3xl">
       <header className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
         <Eyebrow>Assistant · Asistenti</Eyebrow>
         <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Ask the Human Network helper</h1>
         <p className="text-foreground-muted">

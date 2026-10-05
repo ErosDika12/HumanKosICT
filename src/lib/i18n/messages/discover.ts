@@ -54,12 +54,8 @@ export const discover = {
   "discover.view.map": { en: "Map", sq: "Hartë", sr: "Mapa" },
 
   "map.loading": { en: "Loading map…", sq: "Duke ngarkuar hartën…", sr: "Učitavanje mape…" },
-  "map.failed.title": { en: "The map couldn't load right now", sq: "Harta nuk u ngarkua tani", sr: "Mapa trenutno nije mogla da se učita" },
-  "map.failed.body": {
-    en: "Here are the same activities as a list.",
-    sq: "Ja të njëjtat aktivitete si listë.",
-    sr: "Evo istih aktivnosti kao liste.",
-  },
+  "map.failed.title": { en: "The map isn't available right now.", sq: "Harta nuk është e disponueshme tani.", sr: "Mapa trenutno nije dostupna." },
+  "map.failed.body": { en: "Show the activity list", sq: "Shfaq listën e aktiviteteve", sr: "Prikaži listu aktivnosti" },
   "map.aria": {
     en: "Map of demo activities in Prishtina. The list view is a fully keyboard-accessible alternative.",
     sq: "Harta e aktiviteteve demo në Prishtinë. Pamja si listë është alternativë plotësisht e qasshme me tastierë.",

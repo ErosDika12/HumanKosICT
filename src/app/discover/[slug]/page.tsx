@@ -311,7 +311,11 @@ export default async function ActivityDetailPage({
                 </button>
               </form>
             )}
-            {isGoing && <p className="text-xs text-foreground-muted">{t("activity.rsvp.saved")}</p>}
+            {isGoing ? (
+              <p className="text-xs text-foreground-muted">{t("activity.rsvp.saved")}</p>
+            ) : !rsvpBlocked && !isFull ? (
+              <p className="text-xs text-foreground-muted">{t("activity.rsvp.what")}</p>
+            ) : null}
           </Card>
 
           {!rsvpBlocked && (

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOwnProfile } from "@/lib/data/profile";
 import { updateProfileAction } from "@/lib/actions/profile-actions";
@@ -9,7 +8,6 @@ export default async function AccountPage() {
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <DemoBadge className="self-start" />
         <p className="text-sm text-foreground-muted">
           <Link href="/login?next=/account" className="text-brand underline underline-offset-2">
             Sign in
@@ -25,7 +23,6 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <div>
         <h1 className="font-display text-2xl font-semibold text-foreground">Your account</h1>
         <p className="mt-1 text-sm text-foreground-muted">

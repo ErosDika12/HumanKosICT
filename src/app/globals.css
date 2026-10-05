@@ -112,22 +112,6 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Hero network illustration: slow drift, no particles. Disabled for reduced motion above. */
-@keyframes net-dash {
-  to { stroke-dashoffset: -40; }
-}
-@keyframes net-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-.net-line {
-  stroke-dasharray: 3 7;
-  animation: net-dash 22s linear infinite;
-}
-.net-node {
-  animation: net-float 8s ease-in-out infinite;
-}
-
 .hero-navy {
   background:
     radial-gradient(1000px 420px at 85% -10%, rgba(111, 161, 222, 0.22), transparent 60%),

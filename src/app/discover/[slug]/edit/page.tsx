@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/DemoBadge";
 import { ActivityForm } from "@/components/ActivityForm";
 import { getActivityBySlug } from "@/lib/data/activities";
 import { getCommunityBySlug } from "@/lib/data/communities";
@@ -28,7 +27,6 @@ export default async function EditActivityPage({
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <DemoBadge className="self-start" />
         <p className="text-sm text-foreground-muted">
           <Link href={`/login?next=${encodeURIComponent(`/discover/${slug}/edit`)}`} className="underline underline-offset-2">
             Sign in
@@ -41,7 +39,6 @@ export default async function EditActivityPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-semibold text-foreground">Edit {activity.title}</h1>
         <form action={cancelActivityAction}>

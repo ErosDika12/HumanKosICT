@@ -45,21 +45,6 @@ const CATEGORY_KEYWORDS: Record<ActivityCategory, string[]> = {
   community: ["community", "neighborhood", "komunitet", "lagje"],
 };
 
-// Kept for reference of supported phrasings; parsing is done by extractConstraints().
-const WEEKEND_KEYWORDS = [
-  "saturday",
-  "sunday",
-  "weekend",
-  "e shtune",
-  "e shtunë",
-  "e diel",
-  "fundjave",
-  "fundjavë",
-];
-const WEEKDAY_KEYWORDS = ["weekday", "monday", "tuesday", "wednesday", "thursday", "friday"];
-
-const ACCESSIBILITY_KEYWORDS = ["accessible", "accessibility", "wheelchair", "aksesib", "karroce", "karrocë"];
-
 const NEAR_ME_KEYWORDS = ["near me", "nearby", "close to me", "prane meje", "pranë meje", "afer meje", "afër meje"];
 
 const PEOPLE_KEYWORDS = ["meet people", "meet someone", "njerez", "njerëz", "takoj"];

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DemoBadge } from "@/components/DemoBadge";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getImpactSummary } from "@/lib/data/impact";
 import { SIMULATED_NOW_LABEL } from "@/lib/simulated-clock";
@@ -9,7 +8,6 @@ export default async function ImpactPage() {
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <DemoBadge className="self-start" />
         <p className="text-sm text-foreground-muted">
           <Link href="/login?next=/impact" className="text-brand underline underline-offset-2">
             Sign in
@@ -27,7 +25,6 @@ export default async function ImpactPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
         <h1 className="font-display text-3xl font-semibold text-foreground">Your impact</h1>
         <p className="text-sm text-foreground-muted">
           Every item below comes from a real stored action — organizer-confirmed attendance, a

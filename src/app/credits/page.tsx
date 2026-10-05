@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { DemoBadge } from "@/components/DemoBadge";
 import { Photo } from "@/components/Photo";
 import { Card, Eyebrow, PageShell } from "@/components/ui";
 import { listPhotos, PHOTO_DISCLAIMER } from "@/lib/photos";
@@ -11,7 +10,6 @@ export default function CreditsPage() {
   return (
     <PageShell>
       <header className="flex flex-col gap-2">
-        <DemoBadge className="self-start" />
         <Eyebrow>Credits</Eyebrow>
         <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Photo credits</h1>
         <p className="max-w-3xl text-foreground-muted">

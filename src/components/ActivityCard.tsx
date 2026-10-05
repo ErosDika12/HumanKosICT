@@ -74,12 +74,6 @@ export function ActivityCard({
           </span>
           {activity.distanceKm !== undefined && <span>{t("fact.kmAway", { km: activity.distanceKm.toFixed(1) })}</span>}
         </p>
-        {activity.matchReasons && activity.matchReasons.length > 0 && !compact && (
-          <p className="line-clamp-1 text-xs text-foreground-muted">
-            <span className="sr-only">{t("discover.whyShown")} </span>
-            {activity.matchReasons.join(" · ")}
-          </p>
-        )}
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-strong group-hover:underline">
             {t("action.viewActivity")}

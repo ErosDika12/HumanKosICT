@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/DemoBadge";
 import { getCommunityBySlug } from "@/lib/data/communities";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createActivityAction } from "@/lib/actions/organizer-activity-actions";
@@ -23,7 +22,6 @@ export default async function NewActivityPage({
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
-        <DemoBadge className="self-start" />
         <p className="text-sm text-foreground-muted">
           <Link href={`/login?next=${encodeURIComponent(`/communities/${slug}/activities/new`)}`} className="underline underline-offset-2">
             Sign in
@@ -36,7 +34,6 @@ export default async function NewActivityPage({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-      <DemoBadge className="self-start" />
       <div>
         <h1 className="font-display text-2xl font-semibold text-foreground">
           New event for {community.name}

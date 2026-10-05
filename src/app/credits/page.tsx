@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
 import { Photo } from "@/components/Photo";
-import { Card, Eyebrow, PageShell } from "@/components/ui";
-import { listPhotos, PHOTO_DISCLAIMER } from "@/lib/photos";
+import { Card, PageShell } from "@/components/ui";
+import { listPhotos } from "@/lib/photos";
+import { getI18n } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Photo credits — Human Network" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("credits.title") };
+}
 
-export default function CreditsPage() {
+export default async function CreditsPage() {
+  const { t } = await getI18n();
   const photos = listPhotos();
   return (
     <PageShell>
       <header className="flex flex-col gap-2">
-        <Eyebrow>Credits</Eyebrow>
-        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Photo credits</h1>
-        <p className="max-w-3xl text-foreground-muted">
-          All photographs come from Wikimedia Commons under open licenses (CC0, CC BY, CC BY-SA or public domain) and were
-          resized for mobile. {PHOTO_DISCLAIMER} Places shown may be real; the activities, people and communities in this
-          demo are fictional.
-        </p>
+        <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">{t("credits.title")}</h1>
+        <p className="max-w-3xl text-foreground-muted">{t("credits.lead")}</p>
       </header>
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {photos.map((p) => (
@@ -36,7 +36,7 @@ export default function CreditsPage() {
                   )}
                 </p>
                 <a href={p.source} className="mt-auto text-xs text-brand-strong underline" rel="noopener noreferrer">
-                  Source: Wikimedia Commons
+                  {t("credits.source")}
                 </a>
               </div>
             </Card>

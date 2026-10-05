@@ -1,20 +1,24 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { listNeeds, findSimilarOpenNeed } from "@/lib/data/needs";
 import { ensureBridgeProposals } from "@/lib/data/bridge";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { demoLoginAction } from "@/lib/auth/actions";
 import { createNeedAction, toggleNeedSupportAction, reportNeedAction } from "@/lib/actions/need-actions";
 import type { ActivityCategory } from "@/lib/types";
+import { Pill, buttonClass } from "@/components/ui";
+import { PinIcon } from "@/components/icons";
+import { getI18n } from "@/lib/i18n/server";
+import { areaFromSq } from "@/lib/i18n/areas";
+import { localizeText } from "@/lib/i18n/content";
 
-const CATEGORIES: { id: ActivityCategory; label: string }[] = [
-  { id: "technology", label: "Technology" },
-  { id: "environment", label: "Environment" },
-  { id: "sports", label: "Sports" },
-  { id: "education", label: "Education" },
-  { id: "culture", label: "Culture" },
-  { id: "community", label: "Community" },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("nav.needs") };
+}
 
-const STATUS_LABEL: Record<string, string> = { open: "Open", in_progress: "In progress", resolved: "Resolved" };
+const CATEGORIES: ActivityCategory[] = ["technology", "environment", "sports", "education", "culture", "community"];
+const field = "rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground";
 
 export default async function NeedsPage({
   searchParams,
@@ -22,125 +26,103 @@ export default async function NeedsPage({
   searchParams: Promise<{ submitted?: string; supported?: string; reported?: string; category?: string; area?: string }>;
 }) {
   const { submitted, reported, category, area } = await searchParams;
+  const { t, locale } = await getI18n();
   const user = await getCurrentUser();
   await ensureBridgeProposals();
   const needs = await listNeeds(user?.id);
-  const similar =
-    category && area
-      ? await findSimilarOpenNeed(category as ActivityCategory, area)
-      : null;
+  const similar = category && area ? await findSimilarOpenNeed(category as ActivityCategory, area) : null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-2">
-        <h1 className="font-display text-3xl font-semibold text-foreground">Community needs</h1>
-        <p className="text-sm text-foreground-muted">
-          Nevojat e komunitetit — never shows who submitted a need, only its area, category, and
-          description.
-        </p>
+        <h1 className="font-display text-3xl font-semibold text-foreground">{t("needs.title")}</h1>
+        <p className="text-sm text-foreground-muted">{t("needs.lead")}</p>
       </div>
 
-      {submitted && <p className="text-sm text-success">Need submitted — thanks for flagging it.</p>}
-      {reported && <p className="text-sm text-success">Thanks — a moderator will review this report.</p>}
+      {submitted && <p className="text-sm text-success">{t("needs.submitted")}</p>}
+      {reported && <p className="text-sm text-success">{t("needs.reported")}</p>}
 
       {user ? (
-        <details id="submit-need" open={Boolean(similar)} className="rounded-xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer text-sm font-medium text-foreground">Submit a need</summary>
+        <details id="submit-need" open={Boolean(similar)} className="rounded-2xl border border-border bg-surface p-4">
+          <summary className="min-h-10 cursor-pointer text-sm font-semibold text-foreground">{t("needs.submit")}</summary>
           <form action={createNeedAction} className="mt-3 flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Category</span>
-              <select name="category" defaultValue={category ?? "community"} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+              <span className="font-medium text-foreground">{t("needs.category")}</span>
+              <select name="category" defaultValue={category ?? "community"} className={field}>
                 {CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
+                  <option key={c} value={c}>
+                    {t(`category.${c}`)}
                   </option>
                 ))}
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Approximate area</span>
-              <input
-                type="text"
-                name="areaSq"
-                defaultValue={area}
-                placeholder="Prishtinë — Dardania"
-                required
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <span className="font-medium text-foreground">{t("needs.area")}</span>
+              <input type="text" name="areaSq" defaultValue={area} placeholder="Prishtinë — Dardania" required className={field} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-foreground">Description</span>
-              <textarea name="description" required rows={3} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
+              <span className="font-medium text-foreground">{t("needs.description")}</span>
+              <textarea name="description" required rows={3} className={field} />
             </label>
             {similar && (
-              <div className="rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-100">
-                <p>
-                  A similar open need for this category and area already exists ({similar.supportCount}{" "}
-                  supporters): &quot;{similar.description}&quot; — consider supporting it below instead of
-                  submitting a near-duplicate.
-                </p>
+              <div className="rounded-lg border border-accent bg-accent-tint p-3 text-sm text-foreground">
+                <p>{t("needs.similar", { n: similar.supportCount, text: localizeText(similar.description, locale) })}</p>
                 <label className="mt-2 flex items-center gap-2">
                   <input type="checkbox" name="acknowledgedSimilar" />
-                  This is a genuinely different need — submit it anyway
+                  {t("needs.similarAnyway")}
                 </label>
               </div>
             )}
-            <button type="submit" className="inline-flex w-fit items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-strong">
-              Submit
+            <button type="submit" className="inline-flex min-h-10 w-fit items-center justify-center rounded-full bg-brand px-6 py-2 text-sm font-semibold text-white hover:bg-brand-strong">
+              {t("needs.send")}
             </button>
           </form>
         </details>
       ) : (
-        <p className="text-sm text-foreground-muted">
-          <Link href="/login?next=/needs" className="underline underline-offset-2">
-            Sign in
-          </Link>{" "}
-          to submit or support a need.
-        </p>
+        <form action={demoLoginAction}>
+          <button type="submit" className={buttonClass("accent", "md")}>
+            {t("needs.login")}
+          </button>
+        </form>
       )}
 
       <div className="flex flex-col gap-3">
         {needs.length === 0 ? (
-          <p className="text-sm text-foreground-muted">No needs submitted yet.</p>
+          <p className="text-sm text-foreground-muted">{t("needs.none")}</p>
         ) : (
           needs.map((n) => (
-            <div key={n.id} className="rounded-xl border border-border bg-surface p-4">
+            <div key={n.id} className="rounded-2xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-full bg-brand-tint px-2.5 py-1 text-xs font-medium capitalize text-brand-strong">
-                  {n.category}
-                </span>
-                <span className="text-xs text-foreground-muted">{STATUS_LABEL[n.status]}</span>
+                <Pill tone="brand">{t(`category.${n.category}`)}</Pill>
+                <span className="text-xs text-foreground-muted">{t(`needs.status.${n.status}`)}</span>
               </div>
-              <p className="mt-2 text-sm text-foreground">{n.description}</p>
-              <p className="mt-1 text-xs text-foreground-muted">
-                📍 {n.areaSq}
+              <p className="mt-2 text-sm text-foreground">{localizeText(n.description, locale)}</p>
+              <p className="mt-1 flex items-center gap-1 text-xs text-foreground-muted">
+                <PinIcon size={13} />
+                {areaFromSq(n.areaSq, t)}
                 {n.communityName && ` · ${n.communityName}`}
               </p>
               {n.bridgeProposalId && (
-                <Link
-                  href={`/bridge/${n.bridgeProposalId}`}
-                  className="mt-1 inline-block text-xs text-brand-strong underline underline-offset-2"
-                >
-                  💡 See BRIDGE proposal for this need →
+                <Link href={`/bridge/${n.bridgeProposalId}`} className="mt-1 inline-block text-xs text-brand-strong underline underline-offset-2">
+                  {t("needs.bridgeLink")}
                 </Link>
               )}
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 {user ? (
                   <form action={toggleNeedSupportAction}>
                     <input type="hidden" name="needId" value={n.id} />
                     <button
                       type="submit"
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                        n.isSupportedByViewer
-                          ? "border-brand bg-brand text-white"
-                          : "border-border text-foreground-muted hover:bg-surface-muted"
+                      aria-pressed={n.isSupportedByViewer}
+                      className={`min-h-9 rounded-full border px-4 py-1 text-xs font-medium ${
+                        n.isSupportedByViewer ? "border-brand bg-brand text-white" : "border-border text-foreground-muted hover:bg-surface-muted"
                       }`}
                     >
-                      {n.isSupportedByViewer ? "Supported ✓" : "I also need this"} · {n.supportCount}
+                      {n.isSupportedByViewer ? t("needs.supported") : t("needs.support")} · {n.supportCount}
                     </button>
                   </form>
                 ) : (
-                  <span className="text-xs text-foreground-muted">{n.supportCount} supporters</span>
+                  <span className="text-xs text-foreground-muted">{t("needs.supporters", { n: n.supportCount })}</span>
                 )}
                 {user && (
                   <form action={reportNeedAction} className="flex items-center gap-1">
@@ -149,12 +131,12 @@ export default async function NeedsPage({
                       type="text"
                       name="reason"
                       required
-                      placeholder="Report reason"
-                      aria-label={`Reason for reporting: ${n.description}`}
+                      placeholder={t("needs.reportReason")}
+                      aria-label={t("needs.reportAria", { text: localizeText(n.description, locale) })}
                       className="rounded-md border border-border bg-background px-2 py-1 text-xs"
                     />
                     <button type="submit" className="text-xs text-foreground-muted underline underline-offset-2">
-                      Report
+                      {t("needs.report")}
                     </button>
                   </form>
                 )}

@@ -10,7 +10,8 @@
  * date or cost — never accessibility or eligibility.
  */
 import type { ActivityCategory, DemoActivity } from "@/lib/types";
-import { isTimeWindow, matchesWindow, WINDOW_LABEL_EN, windowRange, type TimeWindow } from "@/lib/time-window";
+import { isTimeWindow, matchesWindow, WINDOW_LABEL, windowRange, type TimeWindow } from "@/lib/time-window";
+import { makeI18n, type I18nLite } from "@/lib/i18n/make";
 
 export type Eligibility = DemoActivity["ageEligibility"];
 
@@ -43,7 +44,7 @@ const CATEGORY_WORDS: [ActivityCategory, string[]][] = [
 ];
 
 const ACCESS_WORDS: [string, string[]][] = [
-  ["wheelchair-accessible", ["wheelchair", "accessible", "accessibility", "step-free", "step free", "aksesib", "karroce", "karrocë"]],
+  ["wheelchair-accessible", ["wheelchair", "accessible", "accessibility", "step-free", "step free", "aksesib", "karroce", "karrocë", "qasshme", "qasshem", "qasje"]],
   ["captioned", ["captioned", "captions", "subtitles", "deaf", "hard of hearing"]],
   ["quiet-space-available", ["quiet space", "quiet room", "sensory", "calm space"]],
 ];
@@ -90,7 +91,7 @@ export function extractConstraints(text: string): SearchConstraints {
   else if (/ (this week|rest of the week|next few days|kete jave) /.test(q)) out.window = "week";
   else if (/ (weekday|weekdays|monday|tuesday|wednesday|thursday|friday) /.test(q)) out.window = "weekday";
 
-  if (/ (teen|teens|teenager|teenagers|adolescent|adolescents|kids|children|child|youth) /.test(q)) out.eligibility = "supervised-minors";
+  if (/ (teen|teens|teenager|teenagers|adolescent|adolescents|adoleshent|adoleshente|kids|children|child|youth|femije) /.test(q)) out.eligibility = "supervised-minors";
   else if (/ (adults only|adults-only) /.test(q)) out.eligibility = "adults-only";
 
   return out;
@@ -122,18 +123,25 @@ export function mergeConstraints(prev: SearchConstraints | undefined, next: Sear
   };
 }
 
-/** "free, wheelchair-accessible, in Dardania, this weekend (21–22 June)" — empty string when unconstrained. */
-export function describeConstraints(c: SearchConstraints): string {
+/** "free, wheelchair accessible, in Dardania, this weekend (21–22 June)" — empty string when unconstrained. */
+export function describeConstraints(c: SearchConstraints, i18n: I18nLite = makeI18n("en")): string {
+  const { t, locale, monthLong, dayNumber } = i18n;
+  const lower = (text: string) => text.toLocaleLowerCase(locale);
   const bits: string[] = [];
-  if (c.category) bits.push(c.category);
-  if (c.cost) bits.push(c.cost);
-  if (c.accessibility?.length) bits.push(...c.accessibility.map((a) => a.replace(/-/g, " ")));
-  if (c.eligibility === "supervised-minors") bits.push("for teens and children");
-  if (c.eligibility === "adults-only") bits.push("adults only");
-  if (c.area) bits.push(`in ${CONSTRAINT_AREAS.find((a) => a.areaEn === c.area)?.label ?? c.area}`);
+  if (c.category) bits.push(lower(t(`category.${c.category}`)));
+  if (c.cost) bits.push(t(c.cost === "free" ? "constraint.free" : "constraint.paid"));
+  if (c.accessibility?.length) bits.push(...c.accessibility.map((a) => t(`access.${a}`)));
+  if (c.eligibility === "supervised-minors") bits.push(t("constraint.teens"));
+  if (c.eligibility === "adults-only") bits.push(t("constraint.adults"));
+  if (c.area) bits.push(t("constraint.inArea", { area: t(`area.${c.area}`) }));
   if (c.window) {
     const range = windowRange(c.window);
-    bits.push(range ? `${WINDOW_LABEL_EN[c.window]} (${range.from.slice(8)}–${range.to.slice(8)} June)` : WINDOW_LABEL_EN[c.window]);
+    const label = WINDOW_LABEL[locale][c.window];
+    bits.push(
+      range
+        ? t("constraint.range", { window: label, from: dayNumber(range.from), to: dayNumber(range.to), month: monthLong(range.to) })
+        : label
+    );
   }
   return bits.join(", ");
 }

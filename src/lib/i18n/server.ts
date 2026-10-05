@@ -1,8 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, type Locale } from "./config";
-import { ENGLISH_TABLE, tableFor } from "./catalog";
-import { makeFormatters, makeTranslate, type Formatters, type Translate } from "./translate";
+import { makeI18n } from "./make";
+import type { I18nLite } from "./make";
 
 export async function getLocale(): Promise<Locale> {
   const jar = await cookies();
@@ -10,13 +10,9 @@ export async function getLocale(): Promise<Locale> {
   return isLocale(value) ? value : DEFAULT_LOCALE;
 }
 
-export interface I18n extends Formatters {
-  locale: Locale;
-  t: Translate;
-}
+export type I18n = I18nLite;
 
 /** Server-component translator: `const { t, locale, shortDate } = await getI18n();` */
 export async function getI18n(): Promise<I18n> {
-  const locale = await getLocale();
-  return { locale, t: makeTranslate(locale, tableFor(locale), ENGLISH_TABLE), ...makeFormatters(locale) };
+  return makeI18n(await getLocale());
 }

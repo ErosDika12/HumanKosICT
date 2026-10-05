@@ -27,7 +27,7 @@ function interestList(raw: string, locale: Locale, lower = false): string {
   const parts = raw.split(/,\s*/).map((p) => {
     const i = findInterest(p);
     const label = i ? interestLabel(i, locale) : p;
-    return lower ? label.toLocaleLowerCase(locale === "sr" ? "sr-Latn" : locale) : label;
+    return lower ? label.toLocaleLowerCase(locale) : label;
   });
   return parts.join(", ");
 }

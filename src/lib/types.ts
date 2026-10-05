@@ -24,7 +24,6 @@ export interface Interest {
   id: InterestId;
   labelSq: string;
   labelEn: string;
-  labelSr: string;
   emoji: string;
 }
 
@@ -106,25 +105,25 @@ export interface DemoCommunity {
 }
 
 export const INTERESTS: Interest[] = [
-  { id: "technology", labelSq: "Teknologji", labelEn: "Technology", labelSr: "Tehnologija", emoji: "💻" },
-  { id: "sports", labelSq: "Sport", labelEn: "Sports", labelSr: "Sport", emoji: "🏀" },
-  { id: "art", labelSq: "Art", labelEn: "Art", labelSr: "Umetnost", emoji: "🎨" },
-  { id: "music", labelSq: "Muzikë", labelEn: "Music", labelSr: "Muzika", emoji: "🎵" },
-  { id: "education", labelSq: "Edukim", labelEn: "Education", labelSr: "Obrazovanje", emoji: "📚" },
-  { id: "gaming", labelSq: "Video-lojëra", labelEn: "Gaming", labelSr: "Video-igre", emoji: "🎮" },
-  { id: "environment", labelSq: "Mjedis", labelEn: "Environment", labelSr: "Životna sredina", emoji: "🌱" },
-  { id: "volunteering", labelSq: "Vullnetarizëm", labelEn: "Volunteering", labelSr: "Volonterizam", emoji: "🤝" },
-  { id: "photography", labelSq: "Fotografi", labelEn: "Photography", labelSr: "Fotografija", emoji: "📸" },
-  { id: "cooking", labelSq: "Gatim", labelEn: "Cooking", labelSr: "Kuvanje", emoji: "🍳" },
-  { id: "travel", labelSq: "Udhëtime", labelEn: "Travel", labelSr: "Putovanja", emoji: "✈️" },
-  { id: "science", labelSq: "Shkencë", labelEn: "Science", labelSr: "Nauka", emoji: "🧠" },
-  { id: "culture", labelSq: "Kulturë", labelEn: "Culture", labelSr: "Kultura", emoji: "🎭" },
-  { id: "books", labelSq: "Libra", labelEn: "Books", labelSr: "Knjige", emoji: "📖" },
-  { id: "entrepreneurship", labelSq: "Ndërmarrësi", labelEn: "Entrepreneurship", labelSr: "Preduzetništvo", emoji: "💼" },
+  { id: "technology", labelSq: "Teknologji", labelEn: "Technology", emoji: "💻" },
+  { id: "sports", labelSq: "Sport", labelEn: "Sports", emoji: "🏀" },
+  { id: "art", labelSq: "Art", labelEn: "Art", emoji: "🎨" },
+  { id: "music", labelSq: "Muzikë", labelEn: "Music", emoji: "🎵" },
+  { id: "education", labelSq: "Edukim", labelEn: "Education", emoji: "📚" },
+  { id: "gaming", labelSq: "Video-lojëra", labelEn: "Gaming", emoji: "🎮" },
+  { id: "environment", labelSq: "Mjedis", labelEn: "Environment", emoji: "🌱" },
+  { id: "volunteering", labelSq: "Vullnetarizëm", labelEn: "Volunteering", emoji: "🤝" },
+  { id: "photography", labelSq: "Fotografi", labelEn: "Photography", emoji: "📸" },
+  { id: "cooking", labelSq: "Gatim", labelEn: "Cooking", emoji: "🍳" },
+  { id: "travel", labelSq: "Udhëtime", labelEn: "Travel", emoji: "✈️" },
+  { id: "science", labelSq: "Shkencë", labelEn: "Science", emoji: "🧠" },
+  { id: "culture", labelSq: "Kulturë", labelEn: "Culture", emoji: "🎭" },
+  { id: "books", labelSq: "Libra", labelEn: "Books", emoji: "📖" },
+  { id: "entrepreneurship", labelSq: "Ndërmarrësi", labelEn: "Entrepreneurship", emoji: "💼" },
 ];
 
-export function interestLabel(i: Interest, locale: "sq" | "en" | "sr"): string {
-  return locale === "sq" ? i.labelSq : locale === "sr" ? i.labelSr : i.labelEn;
+export function interestLabel(i: Interest, locale: "sq" | "en"): string {
+  return locale === "sq" ? i.labelSq : i.labelEn;
 }
 
 export function getInterest(id: InterestId): Interest {

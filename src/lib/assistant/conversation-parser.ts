@@ -34,13 +34,13 @@ function normalize(text: string): string {
     .trim();
 }
 
-const FOLLOW_UP = ["another", "other one", "something else", "anything else", "different", "more options", "more ideas", "next one", "what else", "else?", "one more"];
-const JOIN_WORDS = ["join", "volunteer", "take part", "participate", "sign up", "get involved", "contribute", "help with"];
-const BRIDGE_WORDS = ["bridge", "collaboration", "collaborate", "eco-tech", "ecotech"];
-const PLAN_WORDS = ["my plan", "my plans", "what am i going", "what have i", "my rsvp", "my schedule", "my calendar", "already going", "planned"];
-const FRIEND_FIND_WORDS = ["find a friend", "find friends", "new friend", "meet people", "meet someone", "who shares", "who likes", "friends like"];
-const WITH_FRIEND_WORDS = ["with a friend", "with my friend", "together with", "go with", "attend with", "bring a friend", "take a friend"];
-const GREETINGS = ["hi", "hello", "hey", "hej", "pershendetje", "help", "start", "what can you do", "what can you help"];
+const FOLLOW_UP = ["nje tjeter", "tjeter", "me shume ide", "another", "other one", "something else", "anything else", "different", "more options", "more ideas", "next one", "what else", "else?", "one more"];
+const JOIN_WORDS = ["bashkohem", "bashkohu", "vullnet", "marr pjese", "join", "volunteer", "take part", "participate", "sign up", "get involved", "contribute", "help with"];
+const BRIDGE_WORDS = ["bridge", "bashkepunim", "collaboration", "collaborate", "eco-tech", "ecotech"];
+const PLAN_WORDS = ["planet e mia", "planin tim", "cilat jane planet", "my plan", "my plans", "what am i going", "what have i", "my rsvp", "my schedule", "my calendar", "already going", "planned"];
+const FRIEND_FIND_WORDS = ["gjej miq", "miq qe", "nje mik te ri", "find a friend", "find friends", "new friend", "meet people", "meet someone", "who shares", "who likes", "friends like"];
+const WITH_FRIEND_WORDS = ["me nje mik", "me mikun", "me miqte", "with a friend", "with my friend", "together with", "go with", "attend with", "bring a friend", "take a friend"];
+const GREETINGS = ["pershendetje", "tung", "si je", "hi", "hello", "hey", "hej", "pershendetje", "help", "start", "what can you do", "what can you help"];
 
 export function detectFriendMention(text: string, friends: { id: string; name: string }[]): string | null {
   const q = ` ${normalize(text).replace(/[^a-z0-9 ]/g, " ")} `;
@@ -74,7 +74,7 @@ export function parseTurn(text: string, friends: { id: string; name: string }[])
     intent.type === "find-activities" ||
     intent.category ||
     intent.when ||
-    /\b(do|going|activity|activities|event|events|weekend|tonight|tomorrow|this week|free)\b/.test(q)
+    /\b(do|going|activity|activities|event|events|weekend|tonight|tomorrow|this week|free|aktivitet|aktivitete|fundjave|falas|cfare|bej|ndjek)\b/.test(q)
   ) {
     topic = "activities";
   } else if (GREETINGS.some((g) => q === g || q.startsWith(`${g} `) || q.startsWith(`${g}!`))) {

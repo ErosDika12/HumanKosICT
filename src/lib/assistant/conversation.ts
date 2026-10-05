@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { SIMULATED_NOW_LABEL, isSimulatedPast } from "@/lib/simulated-clock";
+import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
 import { listActivities } from "@/lib/data/activities";
 import { scoreActivities } from "@/lib/data/recommendations";
 import { getUserInterests } from "@/lib/data/interests";
@@ -13,7 +13,7 @@ import {
 } from "@/lib/data/friends";
 import { listPlans } from "@/lib/data/invites";
 import { getBridgeShowcase, getFeaturedBridgeId, ensureBridgeProposals } from "@/lib/data/bridge";
-import { SLOT_LABEL, slotOfActivity } from "@/lib/demo-social";
+import { slotOfActivity } from "@/lib/demo-social";
 import type { DemoActivity } from "@/lib/types";
 import { parseTurn } from "./conversation-parser";
 import {
@@ -26,6 +26,11 @@ import {
   type SearchConstraints,
 } from "./constraints";
 import { generateGroundedText, getAiProviderConfig, AiProviderError } from "./ai-provider";
+import type { Locale } from "@/lib/i18n/config";
+import { makeI18n, type I18nLite } from "@/lib/i18n/make";
+import { localizeActivity, localizeText } from "@/lib/i18n/content";
+import { areaFromSq } from "@/lib/i18n/areas";
+import { localizeReason } from "@/lib/i18n/reasons";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -93,21 +98,27 @@ export interface ChatInput {
   viewerId?: string;
   /** Whether this turn may call the AI provider (usage limit not exhausted). */
   aiAllowed: boolean;
+  /** Language of the replies (default English). */
+  locale?: Locale;
 }
 
-const DEFAULT_SUGGESTIONS = [
-  "What can I do this weekend?",
-  "Which activity could I attend with Arta?",
-  "How do I join the BRIDGE project?",
-  "What are my plans?",
-];
+const NEXT_KEY = { review: "review", "join-project": "join", "rsvp-kickoff": "rsvp", "view-plan": "plan", explore: "explore" } as const;
 
-function niceDate(date: string, time: string): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  return `${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })} at ${time}`;
+function defaultSuggestions(i: I18nLite): string[] {
+  const { t } = i;
+  return [t("assistant.s.weekend"), t("assistant.s.withFriend", { name: "Arta" }), t("assistant.s.bridge"), t("assistant.s.plans")];
+}
+
+function niceDate(i: I18nLite, date: string, time: string): string {
+  return i.t("assistant.at", { day: i.longDate(date).replace(/\s+\d{4}$/, ""), time });
+}
+
+function titleOf(i: I18nLite, a: DemoActivity): string {
+  return localizeActivity(a, i.locale).title;
 }
 
 function toActivityCard(
+  i: I18nLite,
   a: DemoActivity,
   reasons: string[],
   going: Set<string>,
@@ -118,9 +129,9 @@ function toActivityCard(
     kind: "activity",
     slug: a.slug,
     activityId: a.id,
-    title: a.title,
-    when: niceDate(a.date, a.startTime),
-    area: a.areaEn.replace("Prishtina — ", ""),
+    title: titleOf(i, a),
+    when: niceDate(i, a.date, a.startTime),
+    area: i.t(`area.${a.areaEn}`),
     reasons,
     spotsLeft: Math.max(0, a.capacity - a.rsvpCount),
     alreadyGoing: going.has(a.id),
@@ -129,8 +140,15 @@ function toActivityCard(
   };
 }
 
-function friendCard(f: FriendCard): ChatCard {
-  return { kind: "friend", id: f.id, name: f.name, area: f.areaSq, reasons: f.reasons, isFriend: f.isFriend };
+function friendCard(i: I18nLite, f: FriendCard): ChatCard {
+  return {
+    kind: "friend",
+    id: f.id,
+    name: f.name,
+    area: f.areaSq ? areaFromSq(f.areaSq, i.t) : null,
+    reasons: f.reasons.map((r) => localizeReason(r, i.t, i.locale)),
+    isFriend: f.isFriend,
+  };
 }
 
 /**
@@ -141,6 +159,7 @@ function friendCard(f: FriendCard): ChatCard {
  */
 export async function respondToChat(input: ChatInput): Promise<ChatReply> {
   const { viewerId } = input;
+  const i = makeI18n(input.locale ?? "en");
   const lastUser = [...input.messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
   const [friends, allFriendNames] = await Promise.all([
@@ -166,35 +185,35 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
   let reply: ChatReply;
   switch (topic) {
     case "with-friend":
-      reply = await withFriend({ viewerId, friendId: friendIdForTurn, friends, allFriendNames, shown, going, isFollowUp: turn.isFollowUp });
+      reply = await withFriend({ i, viewerId, friendId: friendIdForTurn, friends, allFriendNames, shown, going, isFollowUp: turn.isFollowUp });
       break;
     case "bridge-join":
     case "bridge-info":
-      reply = await bridgeAnswer(viewerId, topic === "bridge-join");
+      reply = await bridgeAnswer(i, viewerId, topic === "bridge-join");
       break;
     case "my-plans":
-      reply = await plansAnswer(viewerId);
+      reply = await plansAnswer(i, viewerId);
       break;
     case "find-friends":
-      reply = await findFriendsAnswer(viewerId);
+      reply = await findFriendsAnswer(i, viewerId);
       break;
     case "activities":
-      reply = await activitiesAnswer({ text: lastUser, viewerId, shown, going, turn, previous: input.state.constraints });
+      reply = await activitiesAnswer({ i, text: lastUser, viewerId, shown, going, turn, previous: input.state.constraints });
       break;
     case "greeting":
       reply = {
-        text: `Hi! I'm the Human Network demo helper. I can look up activities, suggest what fits you and a friend, explain the BRIDGE project and summarise your plans — using only the records stored in this demo. Today in the scenario is ${SIMULATED_NOW_LABEL}.`,
+        text: i.t("assistant.greeting", { date: i.longDate(SIMULATED_NOW_ISO) }),
         cards: [],
-        suggestions: DEFAULT_SUGGESTIONS,
+        suggestions: defaultSuggestions(i),
         source: "rules",
         state: input.state,
       };
       break;
     default:
       reply = {
-        text: "I'm not sure what you're after. I can find activities (try “What can I do this weekend?”), suggest something to do with a friend (“Which activity could I attend with Arta?”), explain the BRIDGE project, or summarise your plans.",
+        text: i.t("assistant.unknown"),
         cards: [],
-        suggestions: DEFAULT_SUGGESTIONS,
+        suggestions: defaultSuggestions(i),
         source: "rules",
         state: input.state,
       };
@@ -211,14 +230,11 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
     try {
       const text = await generateGroundedText({
         history: input.messages.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 500) })),
-        facts: { simulatedToday: SIMULATED_NOW_LABEL, rulesAnswer: reply.text, records: reply.cards },
+        facts: { simulatedToday: i.longDate(SIMULATED_NOW_ISO), rulesAnswer: reply.text, records: reply.cards },
       });
       reply = { ...reply, text, source: "ai" };
     } catch (err) {
-      reply.notice =
-        err instanceof AiProviderError
-          ? `The AI provider was unavailable (${err.message}) — showing the rules-based answer instead.`
-          : "The AI provider was unavailable — showing the rules-based answer instead.";
+      reply.notice = err instanceof AiProviderError ? i.t("assistant.aiUnavailableNamed", { why: err.message }) : i.t("assistant.aiUnavailable");
     }
   }
   return reply;
@@ -227,6 +243,7 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
 // ---------------------------------------------------------------------------
 
 async function activitiesAnswer(args: {
+  i: I18nLite;
   text: string;
   viewerId?: string;
   shown: Set<string>;
@@ -234,13 +251,14 @@ async function activitiesAnswer(args: {
   turn: ReturnType<typeof parseTurn>;
   previous?: SearchConstraints;
 }): Promise<ChatReply> {
-  const { text, viewerId, shown, going, turn, previous } = args;
+  const { i, text, viewerId, shown, going, turn, previous } = args;
+  const { t, locale } = i;
 
   // A short follow-up refines the previous search; a fresh request replaces it.
   const stated = extractConstraints(text);
   const carries = Boolean(previous) && (turn.isFollowUp || isRefinement(text));
   const constraints = carries ? mergeConstraints(previous, stated) : stated;
-  const described = describeConstraints(constraints);
+  const described = describeConstraints(constraints, i);
   const filterText = described ? ` (${described})` : "";
 
   const interestIds = viewerId ? await getUserInterests(viewerId) : [];
@@ -248,19 +266,22 @@ async function activitiesAnswer(args: {
   const all = await listActivities({ category: constraints.category });
   const open = all.filter((a) => !isSimulatedPast(a.date) && a.status !== "canceled" && a.capacity - a.rsvpCount > 0);
   const matching = open.filter((a) => satisfies(a, constraints));
-  const scored = scoreActivities(matching, { interestIds, when: constraints.window });
+  const scored = scoreActivities(matching, { interestIds, when: constraints.window, locale });
   const fresh = scored.filter((a) => !shown.has(a.slug));
   const chosen = (turn.isFollowUp ? fresh : scored).slice(0, 3);
   const stateOut: ChatState = { shownSlugs: [], constraints: described ? constraints : undefined };
-  const loginHint = viewerId ? "" : " Log in as demo for picks based on your interests.";
+  const loginHint = viewerId ? "" : t("assistant.loginHintShort");
+  const slotReason = (a: DemoActivity) => t(`slot.${slotOfActivity(a.date, a.startTime)}`);
 
   if (chosen.length > 0) {
     return {
-      text: `${turn.isFollowUp ? "Here's another option" : "Here's what I found"}${filterText}: ${chosen.map((a) => a.title).join("; ")}.${loginHint}`,
-      cards: chosen.map((a) =>
-        toActivityCard(a, a.matchReasons?.length ? a.matchReasons : [`${SLOT_LABEL[slotOfActivity(a.date, a.startTime)]}`], going, Boolean(viewerId))
-      ),
-      suggestions: ["Show me another", "Which activity could I attend with Arta?", "How do I join the BRIDGE project?"],
+      text: t(turn.isFollowUp ? "assistant.foundAnother" : "assistant.found", {
+        filters: filterText,
+        list: chosen.map((a) => titleOf(i, a)).join("; "),
+        login: loginHint,
+      }),
+      cards: chosen.map((a) => toActivityCard(i, a, a.matchReasons?.length ? a.matchReasons : [slotReason(a)], going, Boolean(viewerId))),
+      suggestions: [t("assistant.s.another"), t("assistant.s.withFriend", { name: "Arta" }), t("assistant.s.bridge")],
       source: "rules",
       state: stateOut,
     };
@@ -268,42 +289,43 @@ async function activitiesAnswer(args: {
 
   if (turn.isFollowUp && scored.length > 0) {
     return {
-      text: `That's every matching activity I have${filterText} — you've seen all ${scored.length}.`,
+      text: t("assistant.everyMatch", { filters: filterText, n: scored.length }),
       cards: [],
-      suggestions: ["What can I do this weekend?", "Show me something accessible"],
+      suggestions: [t("assistant.s.weekend"), t("assistant.s.accessible")],
       source: "rules",
       state: stateOut,
     };
   }
 
-  // Nothing matches. Offer ONE clearly labelled alternative that relaxes location, date or cost —
+  // Nothing matches. Offer a clearly labelled alternative that relaxes location, date or cost —
   // never accessibility or eligibility — and say exactly which requirement it does not meet.
   const unmet = (key: keyof SearchConstraints): string =>
-    key === "window" ? "the date" : key === "area" ? "the area" : "the price";
+    t(key === "window" ? "assistant.unmet.window" : key === "area" ? "assistant.unmet.area" : "assistant.unmet.cost");
   for (const key of RELAXABLE) {
     if (constraints[key] === undefined) continue;
-    const alternatives = scoreActivities(open.filter((a) => satisfies(a, constraints, [key])), { interestIds }).slice(0, 2);
+    const alternatives = scoreActivities(open.filter((a) => satisfies(a, constraints, [key])), { interestIds, locale }).slice(0, 2);
     if (alternatives.length === 0) continue;
     return {
-      text: `Nothing matches everything you asked for${filterText}. Below ${alternatives.length === 1 ? "is the closest alternative" : "are the closest alternatives"}: ${alternatives.length === 1 ? "it keeps" : "they keep"} your other requirements but ${alternatives.length === 1 ? "does" : "do"} not match ${unmet(key)} you asked for.`,
+      text: t(alternatives.length === 1 ? "assistant.noMatchAlt" : "assistant.noMatchAlts", { filters: filterText, what: unmet(key) }),
       cards: alternatives.map((a) =>
-        toActivityCard(a, [`Alternative — not a match on ${unmet(key)}`, ...(a.matchReasons ?? [])], going, Boolean(viewerId))
+        toActivityCard(i, a, [t("assistant.altLabel", { what: unmet(key) }), ...(a.matchReasons ?? [])], going, Boolean(viewerId))
       ),
-      suggestions: ["Show me something accessible", "What can I do this weekend?"],
+      suggestions: [t("assistant.s.accessible"), t("assistant.s.weekend")],
       source: "rules",
       state: stateOut,
     };
   }
   return {
-    text: `I couldn't find an open upcoming activity${filterText}, and nothing close enough to suggest as an alternative. Try changing the day or area, or browse the full list on Discover.`,
+    text: t("assistant.noMatch", { filters: filterText }),
     cards: [],
-    suggestions: ["What can I do this weekend?", "Show me something accessible", "Find a technology activity"],
+    suggestions: [t("assistant.s.weekend"), t("assistant.s.accessible"), t("assistant.s.tech")],
     source: "rules",
     state: stateOut,
   };
 }
 
 async function withFriend(args: {
+  i: I18nLite;
   viewerId?: string;
   friendId?: string;
   friends: FriendCard[];
@@ -312,12 +334,13 @@ async function withFriend(args: {
   going: Set<string>;
   isFollowUp: boolean;
 }): Promise<ChatReply> {
-  const { viewerId, friendId, friends, allFriendNames, shown, going, isFollowUp } = args;
+  const { i, viewerId, friendId, friends, allFriendNames, shown, going, isFollowUp } = args;
+  const { t } = i;
   if (!viewerId) {
     return {
-      text: "Friends live on your demo account. Log in as demo (one click, no password) and I can suggest activities that suit you and a friend.",
+      text: t("assistant.friend.login"),
       cards: [{ kind: "login" }],
-      suggestions: ["What can I do this weekend?"],
+      suggestions: [t("assistant.s.weekend")],
       source: "rules",
       state: { shownSlugs: [] },
     };
@@ -325,25 +348,23 @@ async function withFriend(args: {
   if (!friendId) {
     const names = friends.map((f) => f.name.split(" ")[0]);
     return {
-      text: names.length
-        ? `Who would you like to go with? Your friends: ${names.join(", ")}.`
-        : "You don't have any friends yet — add a demo friend first and I'll find something that fits you both.",
+      text: names.length ? t("assistant.friend.who", { names: names.join(", ") }) : t("assistant.friend.none"),
       cards: [],
-      suggestions: names.slice(0, 3).map((n) => `Which activity could I attend with ${n}?`).concat(names.length ? [] : ["Find friends who like what I like"]),
+      suggestions: names.slice(0, 3).map((n) => t("assistant.s.withFriend", { name: n })).concat(names.length ? [] : [t("assistant.s.findFriends")]),
       source: "rules",
       state: { shownSlugs: [] },
     };
   }
-  const name = allFriendNames.find((f) => f.id === friendId)?.name ?? "them";
+  const name = allFriendNames.find((f) => f.id === friendId)?.name ?? "—";
   const first = name.split(" ")[0];
   const friend = friends.find((f) => f.id === friendId);
   if (!friend) {
     const suggestions = await listFriendSuggestions(viewerId);
     const card = suggestions.find((s) => s.id === friendId);
     return {
-      text: `${name} isn't one of your friends yet. Add them and I can look for something that suits you both.`,
-      cards: card ? [friendCard(card)] : [{ kind: "friend", id: friendId, name, area: null, reasons: [], isFriend: false }],
-      suggestions: ["What can I do this weekend?"],
+      text: t("assistant.friend.notYet", { name }),
+      cards: card ? [friendCard(i, card)] : [{ kind: "friend", id: friendId, name, area: null, reasons: [], isFriend: false }],
+      suggestions: [t("assistant.s.weekend")],
       source: "rules",
       state: { focusFriendId: friendId, shownSlugs: [] },
     };
@@ -352,105 +373,120 @@ async function withFriend(args: {
   const fresh = all.filter((s) => !shown.has(s.activity.slug));
   const chosen = (isFollowUp ? fresh : all).slice(0, 3);
   if (chosen.length === 0) {
-    const slots = friend.availability.map((s) => SLOT_LABEL[s]).join(", ");
+    const slots = friend.availability.map((s) => t(`slotNoun.${s}`)).join(", ");
     return {
-      text: isFollowUp && all.length > 0
-        ? `That's every activity I can match for you and ${first} — you've seen all ${all.length}.`
-        : `I couldn't find an open upcoming activity that fits both ${first}'s availability (${slots}) and shared interests. Browse Discover for other ideas.`,
+      text: isFollowUp && all.length > 0 ? t("assistant.friend.exhausted", { first, n: all.length }) : t("assistant.friend.nothing", { first, slots }),
       cards: [],
-      suggestions: ["What can I do this weekend?", "Find friends who like what I like"],
+      suggestions: [t("assistant.s.weekend"), t("assistant.s.findFriends")],
       source: "rules",
       state: { focusFriendId: friendId, shownSlugs: [] },
     };
   }
   return {
-    text: `${isFollowUp ? "Another one" : "Good options"} for you and ${first}: ${chosen.map((c) => c.activity.title).join("; ")}. I can't send the invitation for you — use the Invite button.`,
+    text: t(isFollowUp ? "assistant.friend.another" : "assistant.friend.good", { first, list: chosen.map((c) => titleOf(i, c.activity)).join("; ") }),
     cards: chosen.map((c) =>
-      toActivityCard(c.activity, c.reasons, going, true, { friendId, friendName: name, alreadyInvited: c.alreadyInvited })
+      toActivityCard(i, c.activity, c.reasons.map((r) => localizeReason(r, t, i.locale)), going, true, { friendId, friendName: name, alreadyInvited: c.alreadyInvited })
     ),
-    suggestions: [`Show me another with ${first}`, "What are my plans?", "How do I join the BRIDGE project?"],
+    suggestions: [t("assistant.s.anotherWith", { name: first }), t("assistant.s.plans"), t("assistant.s.bridge")],
     source: "rules",
     state: { focusFriendId: friendId, shownSlugs: [] },
   };
 }
 
-async function bridgeAnswer(viewerId: string | undefined, join: boolean): Promise<ChatReply> {
+async function bridgeAnswer(i: I18nLite, viewerId: string | undefined, join: boolean): Promise<ChatReply> {
+  const { t, locale } = i;
   await ensureBridgeProposals();
   const id = await getFeaturedBridgeId();
   const showcase = id ? await getBridgeShowcase(id, viewerId) : null;
   if (!showcase) {
-    return { text: "There is no BRIDGE proposal to show right now.", cards: [], suggestions: DEFAULT_SUGGESTIONS, source: "rules", state: { shownSlugs: [] } };
+    return { text: t("assistant.bridge.none"), cards: [], suggestions: defaultSuggestions(i), source: "rules", state: { shownSlugs: [] } };
   }
   const current = showcase.stages.find((s) => s.state === "current") ?? showcase.stages[showcase.stages.length - 1];
   const joined = showcase.project?.viewerIsVolunteer ?? false;
+  const kickoffTitle = showcase.kickoff ? localizeText(showcase.kickoff.title, locale) : "";
   const steps: string[] = [];
-  if (showcase.project && !joined) steps.push(`join the project “${showcase.project.title}”`);
-  if (showcase.kickoff && !showcase.kickoff.isPast) steps.push(`RSVP to the first session, ${showcase.kickoff.title} (${showcase.kickoff.date})`);
+  if (showcase.project && !joined) steps.push(t("assistant.bridge.stepJoin", { title: locale === "sq" ? showcase.communityA.name + " × " + showcase.communityB.name : showcase.project.title }));
+  if (showcase.kickoff && !showcase.kickoff.isPast) steps.push(t("assistant.bridge.stepRsvp", { title: kickoffTitle, date: i.shortDate(showcase.kickoff.date) }));
   const howTo = joined
-    ? `You have already joined the project.${showcase.kickoff && !showcase.kickoff.viewerHasRsvp ? ` Next, RSVP to ${showcase.kickoff.title} on ${showcase.kickoff.date}.` : ""}`
+    ? t("assistant.bridge.joinedAlready") +
+      (showcase.kickoff && !showcase.kickoff.viewerHasRsvp ? t("assistant.bridge.rsvpNext", { title: kickoffTitle, date: i.shortDate(showcase.kickoff.date) }) : "")
     : steps.length
-      ? `To take part: ${steps.join(", then ")}. I can't do it for you — use the buttons.`
-      : "This proposal is still being reviewed, so there is nothing to join yet.";
+      ? t("assistant.bridge.steps", { steps: steps.join(t("assistant.bridge.stepsJoiner")) })
+      : t("assistant.bridge.review");
+  const stageText = locale === "en" ? t("assistant.bridge.stage", { label: current.label, detail: current.detail }) : t(`bridge.step.${current.key}`);
   return {
-    text: `${showcase.communityA.name} and ${showcase.communityB.name} are working together on this need: “${showcase.need.description}” Current step: ${current.label} — ${current.detail}. ${join ? howTo : `Open BRIDGE to explore each step. ${howTo}`}${viewerId ? "" : " Log in as demo to join."}`,
+    text: t("assistant.bridge.text", {
+      a: showcase.communityA.name,
+      b: showcase.communityB.name,
+      need: localizeText(showcase.need.description, locale),
+      step: stageText,
+      rest: join ? howTo : `${t("assistant.bridge.openHint")} ${howTo}`,
+      login: viewerId ? "" : t("assistant.bridge.loginHint"),
+    }),
     cards: [
       {
         kind: "bridge",
         id: showcase.id,
         title: `${showcase.communityA.name} × ${showcase.communityB.name}`,
-        stage: `${current.label} — ${current.detail}`,
-        need: showcase.need.description,
+        stage: stageText,
+        need: localizeText(showcase.need.description, locale),
         projectId: showcase.project?.id ?? null,
         canJoin: Boolean(viewerId) && Boolean(showcase.project) && !joined,
         alreadyJoined: joined,
-        nextLabel: showcase.nextStep.label,
+        nextLabel: t(`bridge.next.${NEXT_KEY[showcase.nextStep.kind]}`),
         nextHref: showcase.nextStep.href,
       },
       ...(viewerId ? [] : [{ kind: "login" } as ChatCard]),
     ],
-    suggestions: ["What are my plans?", "Which activity could I attend with Arta?"],
+    suggestions: [t("assistant.s.plans"), t("assistant.s.withFriend", { name: "Arta" })],
     source: "rules",
     state: { shownSlugs: [] },
   };
 }
 
-async function plansAnswer(viewerId?: string): Promise<ChatReply> {
+async function plansAnswer(i: I18nLite, viewerId?: string): Promise<ChatReply> {
+  const { t, locale } = i;
   if (!viewerId) {
-    return { text: "Your plans are stored on your demo account. Log in as demo to see them.", cards: [{ kind: "login" }], suggestions: ["What can I do this weekend?"], source: "rules", state: { shownSlugs: [] } };
+    return { text: t("assistant.plans.login"), cards: [{ kind: "login" }], suggestions: [t("assistant.s.weekend")], source: "rules", state: { shownSlugs: [] } };
   }
   const plans = (await listPlans(viewerId)).filter((p) => !p.activity.isPast && !p.activity.isCanceled).slice(0, 4);
   if (plans.length === 0) {
-    return { text: "You have no upcoming plans yet. RSVP to an activity or invite a friend and it will appear here.", cards: [], suggestions: ["What can I do this weekend?"], source: "rules", state: { shownSlugs: [] } };
+    return { text: t("assistant.plans.none"), cards: [], suggestions: [t("assistant.s.weekend")], source: "rules", state: { shownSlugs: [] } };
   }
+  const all = await listActivities();
+  const bySlug = new Map(all.map((a) => [a.slug, localizeActivity(a, locale).title]));
+  const titleFor = (p: (typeof plans)[number]) => bySlug.get(p.activity.slug) ?? p.activity.title;
   return {
-    text: `You have ${plans.length} upcoming plan${plans.length === 1 ? "" : "s"}: ${plans.map((p) => p.activity.title).join("; ")}.`,
+    text: t("assistant.plans.some", { n: plans.length, list: plans.map(titleFor).join("; ") }),
     cards: plans.map((p) => ({
       kind: "plan" as const,
       slug: p.activity.slug,
-      title: p.activity.title,
-      when: niceDate(p.activity.date, p.activity.startTime),
+      title: titleFor(p),
+      when: niceDate(i, p.activity.date, p.activity.startTime),
       note: [
-        p.myRsvp === "confirmed" ? "You're going" : "Not RSVP'd yet",
-        ...p.invites.map((i) => `${i.direction === "sent" ? "you invited" : "invited by"} ${i.otherName} (${i.status}${i.isSimulatedReply ? ", simulated reply" : ""})`),
+        p.myRsvp === "confirmed" ? t("assistant.plans.rsvp") : t("assistant.plans.noRsvp"),
+        ...p.invites.map(
+          (inv) =>
+            `${inv.direction === "sent" ? t("assistant.plans.youInvited", { name: inv.otherName }) : t("assistant.plans.invitedBy", { name: inv.otherName })} (${t(`invite.${inv.status}`)}${inv.isSimulatedReply ? t("assistant.plans.simulated") : ""})`
+        ),
       ].join(" · "),
     })),
-    suggestions: ["Which activity could I attend with Arta?", "What can I do this weekend?"],
+    suggestions: [t("assistant.s.withFriend", { name: "Arta" }), t("assistant.s.weekend")],
     source: "rules",
     state: { shownSlugs: [] },
   };
 }
 
-async function findFriendsAnswer(viewerId?: string): Promise<ChatReply> {
+async function findFriendsAnswer(i: I18nLite, viewerId?: string): Promise<ChatReply> {
+  const { t } = i;
   if (!viewerId) {
-    return { text: "Log in as demo and I can show demo friends who share your interests.", cards: [{ kind: "login" }], suggestions: [], source: "rules", state: { shownSlugs: [] } };
+    return { text: t("assistant.people.login"), cards: [{ kind: "login" }], suggestions: [], source: "rules", state: { shownSlugs: [] } };
   }
   const suggestions = (await listFriendSuggestions(viewerId)).slice(0, 3);
   return {
-    text: suggestions.length
-      ? `These demo friends share something with you: ${suggestions.map((s) => s.name).join(", ")}. They are fictional and never reply live.`
-      : "You already have every demo friend who shares something with you.",
-    cards: suggestions.map(friendCard),
-    suggestions: suggestions[0] ? [`Which activity could I attend with ${suggestions[0].name.split(" ")[0]}?`] : ["What can I do this weekend?"],
+    text: suggestions.length ? t("assistant.people.some", { names: suggestions.map((s) => s.name).join(", ") }) : t("assistant.people.none"),
+    cards: suggestions.map((s) => friendCard(i, s)),
+    suggestions: suggestions[0] ? [t("assistant.s.withFriend", { name: suggestions[0].name.split(" ")[0] })] : [t("assistant.s.weekend")],
     source: "rules",
     state: { shownSlugs: [] },
   };

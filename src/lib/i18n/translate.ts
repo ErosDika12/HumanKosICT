@@ -34,6 +34,8 @@ export interface Formatters {
   shortDate: (isoDate: string) => string;
   longDate: (isoDate: string) => string;
   weekdayLong: (isoDate: string) => string;
+  monthLong: (isoDate: string) => string;
+  dayNumber: (isoDate: string) => number;
   number: (n: number) => string;
 }
 
@@ -55,12 +57,6 @@ const NAMES: Record<Locale, { weekday: string[]; weekdayShort: string[]; month: 
     month: ["janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "nëntor", "dhjetor"],
     monthShort: ["jan", "shk", "mar", "pri", "maj", "qer", "kor", "gus", "sht", "tet", "nën", "dhj"],
   },
-  sr: {
-    weekday: ["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"],
-    weekdayShort: ["ned", "pon", "uto", "sre", "čet", "pet", "sub"],
-    month: ["januar", "februar", "mart", "april", "maj", "jun", "jul", "avgust", "septembar", "oktobar", "novembar", "decembar"],
-    monthShort: ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "avg", "sep", "okt", "nov", "dec"],
-  },
 };
 
 export function makeFormatters(locale: Locale): Formatters {
@@ -69,19 +65,20 @@ export function makeFormatters(locale: Locale): Formatters {
     const d = new Date(`${iso}T00:00:00Z`);
     return { dow: d.getUTCDay(), day: d.getUTCDate(), month: d.getUTCMonth(), year: d.getUTCFullYear() };
   };
-  const dot = locale === "sr" ? "." : "";
   const num = new Intl.NumberFormat(INTL_LOCALE[locale]);
   return {
     shortDate: (iso) => {
       const p = parts(iso);
-      return `${n.weekdayShort[p.dow]} ${p.day}${dot} ${n.monthShort[p.month]}`;
+      return `${n.weekdayShort[p.dow]} ${p.day} ${n.monthShort[p.month]}`;
     },
     longDate: (iso) => {
       const p = parts(iso);
       const sep = locale === "en" ? " " : ", ";
-      return `${n.weekday[p.dow]}${sep}${p.day}${dot} ${n.month[p.month]} ${p.year}`;
+      return `${n.weekday[p.dow]}${sep}${p.day} ${n.month[p.month]} ${p.year}`;
     },
     weekdayLong: (iso) => n.weekday[parts(iso).dow],
+    monthLong: (iso) => n.month[parts(iso).month],
+    dayNumber: (iso) => parts(iso).day,
     number: (value) => num.format(value),
   };
 }

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { respondToChat, type ChatMessage, type ChatState } from "@/lib/assistant/conversation";
 import { consumeAssistantQuota } from "@/lib/assistant/usage";
 import { getAiProviderConfig } from "@/lib/assistant/ai-provider";
+import { getLocale } from "@/lib/i18n/server";
 import { sanitizeConstraints } from "@/lib/assistant/constraints";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const reply = await respondToChat({ messages: parsed.messages, state: parsed.state, viewerId: user?.id, aiAllowed });
+    const reply = await respondToChat({ messages: parsed.messages, state: parsed.state, viewerId: user?.id, aiAllowed, locale: await getLocale() });
     return NextResponse.json({ reply, mode: getAiProviderConfig() ? "ai-available" : "rules-only" });
   } catch (err) {
     console.error("assistant error", err);

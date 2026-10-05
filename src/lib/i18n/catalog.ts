@@ -4,7 +4,6 @@ import type { Locale } from "./config";
 export interface Entry {
   en: string;
   sq: string;
-  sr: string;
 }
 export type Catalog = Record<string, Entry>;
 
@@ -16,8 +15,10 @@ import { home } from "./messages/home";
 import { social } from "./messages/social";
 import { community } from "./messages/community";
 import { bridge } from "./messages/bridge";
+import { pages } from "./messages/pages";
+import { assistant } from "./messages/assistant";
 
-export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge } satisfies Catalog;
+export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge, ...pages, ...assistant } satisfies Catalog;
 
 export type MessageKey = keyof typeof CATALOG;
 

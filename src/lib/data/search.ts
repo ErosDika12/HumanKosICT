@@ -37,7 +37,7 @@ function haystack(a: DemoActivity): string {
   }
   for (const tag of a.interestTags) {
     const interest = INTERESTS.find((i) => i.id === tag);
-    if (interest) parts.push(interest.labelEn, interest.labelSq, interest.labelSr);
+    if (interest) parts.push(interest.labelEn, interest.labelSq);
   }
   return normalizeSearch(parts.join(" "));
 }

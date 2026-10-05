@@ -52,12 +52,11 @@ export function haversineKm(a: GeoPoint, b: GeoPoint): number {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-type ReasonLocale = "sq" | "en" | "sr";
+type ReasonLocale = "sq" | "en";
 
 const REASON_TEXT: Record<ReasonLocale, { interest: (labels: string) => string; and: string; when: (window: string) => string }> = {
   en: { interest: (l) => `Matches your interest in ${l}`, and: " and ", when: (w) => `Happening ${w}` },
   sq: { interest: (l) => `Përputhet me interesin tënd për ${l}`, and: " dhe ", when: (w) => `Zhvillohet ${w}` },
-  sr: { interest: (l) => `Odgovara vašem interesovanju za ${l}`, and: " i ", when: (w) => `Održava se ${w}` },
 };
 
 export interface RecommendationContext {

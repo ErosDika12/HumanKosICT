@@ -28,7 +28,7 @@ function Switcher({ className = "" }: { className?: string }) {
           <a
             key={code}
             href={hrefFor(code)}
-            lang={code === "sr" ? "sr-Latn" : code}
+            lang={code}
             hrefLang={code}
             aria-current={active ? "true" : undefined}
             title={LOCALE_NAME[code]}

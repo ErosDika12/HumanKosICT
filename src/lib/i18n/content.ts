@@ -12,7 +12,6 @@
  */
 import type { DemoActivity } from "@/lib/types";
 import type { Locale } from "./config";
-import { ACTIVITY_SR } from "./content/activities-sr";
 import { TEXT_TRANSLATIONS } from "./content/texts";
 
 export interface ActivityText {
@@ -29,15 +28,6 @@ export function localizeActivity(a: Pick<DemoActivity, "slug" | "title" | "title
       summary: a.summarySq || a.summary,
       description: a.descriptionSq || a.description,
       costDetail: a.costDetail ? (TEXT_TRANSLATIONS[a.costDetail]?.sq ?? a.costDetail) : undefined,
-    };
-  }
-  if (locale === "sr") {
-    const sr = ACTIVITY_SR[a.slug];
-    return {
-      title: sr?.title ?? a.title,
-      summary: sr?.summary ?? a.summary,
-      description: sr?.description ?? a.description,
-      costDetail: a.costDetail ? (sr?.costDetail ?? TEXT_TRANSLATIONS[a.costDetail]?.sr ?? a.costDetail) : undefined,
     };
   }
   return { title: a.title, summary: a.summary, description: a.description, costDetail: a.costDetail };

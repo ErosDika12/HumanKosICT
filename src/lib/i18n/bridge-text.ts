@@ -15,7 +15,7 @@ const CATEGORY_IDS = ["technology", "environment", "sports", "education", "cultu
 
 function cat(raw: string, t: Translate, locale: Locale): string {
   const id = raw.trim().toLowerCase();
-  return CATEGORY_IDS.includes(id) ? t(`category.${id}`).toLocaleLowerCase(locale === "sr" ? "sr-Latn" : locale) : raw;
+  return CATEGORY_IDS.includes(id) ? t(`category.${id}`).toLocaleLowerCase(locale) : raw;
 }
 
 function interests(raw: string, locale: Locale): string {
@@ -23,7 +23,7 @@ function interests(raw: string, locale: Locale): string {
     .split(/,\s*/)
     .map((id) => {
       const i = INTERESTS.find((x) => x.id === id.trim());
-      return i ? interestLabel(i, locale).toLocaleLowerCase(locale === "sr" ? "sr-Latn" : locale) : id;
+      return i ? interestLabel(i, locale).toLocaleLowerCase(locale) : id;
     })
     .join(", ");
 }

@@ -97,7 +97,7 @@ export function extractConstraints(text: string): SearchConstraints {
   return out;
 }
 
-const REFINEMENT_START = /^(only|just|also|and|but|instead|actually|make it|what about|how about|in |near |on |for |with |without|no |not |please|ok|okay)/;
+const REFINEMENT_START = /^(only|just|also|and|but|instead|actually|make it|what about|how about|in |near |on |for |with |without|no |not |please|ok|okay|vetem|dhe |por |gjithashtu|po |jo |me |ne |per |pa |si per|çfarë për|cfare per)/;
 
 /**
  * A short follow-up that adds to or narrows the previous search ("Only in

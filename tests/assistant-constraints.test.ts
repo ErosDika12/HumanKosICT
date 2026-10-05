@@ -70,3 +70,13 @@ describe("satisfies() hard constraints", () => {
     assert.equal(satisfies({ ...photoWalk, ageEligibility: "supervised-minors" }, { eligibility: "supervised-minors" }), true);
   });
 });
+
+describe("Albanian follow-ups refine the previous search", () => {
+  it("'Vetëm në Dardania, ju lutem' is a refinement and keeps the earlier constraints", () => {
+    assert.equal(isRefinement("Vetëm në Dardania, ju lutem"), true);
+    assert.equal(isRefinement("Çfarë mund të bëj këtë fundjavë?"), false);
+    const first = extractConstraints("Gjej një aktivitet falas të qasshëm në Dardania këtë fundjavë");
+    assert.deepEqual(first, { area: "Prishtina — Dardania", cost: "free", accessibility: ["wheelchair-accessible"], window: "weekend" });
+    assert.deepEqual(mergeConstraints(first, extractConstraints("Vetëm në Dardania, ju lutem")), first);
+  });
+});

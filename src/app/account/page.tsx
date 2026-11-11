@@ -1,11 +1,14 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { demoLoginAction } from "@/lib/auth/actions";
+import { deleteAccountAction, demoLoginAction } from "@/lib/auth/actions";
+import { errorMessage } from "@/lib/i18n/errors";
+import { Notice } from "@/components/ui";
 import { getOwnProfile } from "@/lib/data/profile";
 import { updateProfileAction } from "@/lib/actions/profile-actions";
 import { buttonClass } from "@/components/ui";
 import { getI18n } from "@/lib/i18n/server";
 
-export default async function AccountPage() {
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   const { t } = await getI18n();
   const user = await getCurrentUser();
   if (!user) {
@@ -22,6 +25,8 @@ export default async function AccountPage() {
 
   const profile = await getOwnProfile(user.id);
   if (!profile) return null;
+  const errMsg = errorMessage(t, error);
+  const canDelete = (profile.role === "MEMBER" || profile.role === "ORGANIZER") && !user.isDemoPersona;
   const box = "rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground";
 
   return (
@@ -50,6 +55,28 @@ export default async function AccountPage() {
           {t("account.save")}
         </button>
       </form>
+
+      {errMsg && <Notice kind="error">{errMsg}</Notice>}
+
+      <section aria-labelledby="delete-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5">
+        <h2 id="delete-title" className="font-display text-lg font-semibold text-foreground">
+          {t("account.delete.title")}
+        </h2>
+        {canDelete ? (
+          <form action={deleteAccountAction} className="flex flex-col gap-3">
+            <p className="text-sm text-foreground-muted">{t("account.delete.body")}</p>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-foreground">{t("account.delete.confirm")}</span>
+              <input name="confirm" required autoComplete="off" className={box} />
+            </label>
+            <button type="submit" className={buttonClass("danger", "md", "w-fit")}>
+              {t("account.delete.submit")}
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-foreground-muted">{t("account.delete.staff")}</p>
+        )}
+      </section>
     </div>
   );
 }

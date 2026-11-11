@@ -36,13 +36,13 @@ export const common = {
   "nav.staff": { en: "Staff tools", sq: "Mjetet e stafit" },
   "nav.moderation": { en: "Moderation", sq: "Moderimi" },
   "nav.municipality": { en: "Municipality view", sq: "Pamja e komunës" },
-  "nav.staffSignIn": { en: "Staff sign in", sq: "Hyrje stafi" },
+  "nav.staffSignIn": { en: "Create account", sq: "Krijo llogari" },
   "nav.signOut": { en: "Sign out", sq: "Dil" },
   "nav.devPersonas": { en: "Dev personas", sq: "Personat e zhvillimit" },
   "nav.demoLabel": { en: "demo", sq: "demo" },
 
   // Actions
-  "action.demoLogin": { en: "Log in as demo", sq: "Hyr si demo" },
+  "action.demoLogin": { en: "Sign in", sq: "Hyr" },
   "action.explore": { en: "Explore activities", sq: "Shfleto aktivitetet" },
   "action.view": { en: "View", sq: "Shiko" },
   "action.viewActivity": { en: "View activity", sq: "Shiko aktivitetin" },

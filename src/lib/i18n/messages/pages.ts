@@ -30,11 +30,11 @@ export const pages = {
 
   // Login
   "login.title": { en: "Sign in", sq: "Hyrje" },
-  "login.lead": { en: "The quickest way in is the demo. Staff sign-in is only for the seeded organizer, moderator and analyst accounts.", sq: "Mënyra më e shpejtë është demoja. Hyrja e stafit është vetëm për llogaritë organizator, moderator dhe analist." },
+  "login.lead": { en: "Sign in with your email and password, or create an account.", sq: "Hyr me email dhe fjalëkalim, ose krijo një llogari." },
   "login.demo.title": { en: "Log in as demo", sq: "Hyr si demo" },
   "login.demo.body": { en: "One click, no password. You get your own temporary account with example friends. Everything you do stays on it, and it is removed after a day.", sq: "Një klikim, pa fjalëkalim. Merr llogarinë tënde të përkohshme me miq shembull. Gjithçka që bën mbetet te ajo dhe fshihet pas një dite." },
-  "login.staff.title": { en: "Staff sign in", sq: "Hyrje për stafin" },
-  "login.staff.body": { en: "For maintainers reviewing moderation and the municipality view.", sq: "Për mirëmbajtësit që shqyrtojnë moderimin dhe pamjen e komunës." },
+  "login.staff.title": { en: "Sign in", sq: "Hyr" },
+  "login.staff.body": { en: "Use the email and password of your account.", sq: "Përdor emailin dhe fjalëkalimin e llogarisë tënde." },
   "login.staff.prod": { en: "These accounts use a private password that is not published on this site.", sq: "Këto llogari përdorin një fjalëkalim privat që nuk publikohet në këtë faqe." },
   "login.staff.dev": { en: "Local development: every seeded persona shares the password Demo-2036! (see the persona list).", sq: "Zhvillim lokal: çdo person i paracaktuar ka fjalëkalimin Demo-2036! (shiko listën e personave)." },
   "login.email": { en: "Email", sq: "Email" },
@@ -44,7 +44,7 @@ export const pages = {
 
   // Account
   "account.title": { en: "Your account", sq: "Llogaria jote" },
-  "account.login": { en: "Log in as demo to view your account.", sq: "Hyr si demo për të parë llogarinë tënde." },
+  "account.login": { en: "Sign in to view your account.", sq: "Hyr për të parë llogarinë tënde." },
   "account.meta": { en: "{name} · {email} · role: {role}", sq: "{name} · {email} · roli: {role}" },
   "account.bio": { en: "Bio (English)", sq: "Biografia (anglisht)" },
   "account.bioSq": { en: "Bio (Albanian)", sq: "Biografia (shqip)" },

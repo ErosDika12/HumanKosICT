@@ -22,8 +22,9 @@ import { forms } from "./messages/forms";
 import { staff } from "./messages/staff";
 import { destinations } from "./messages/destinations";
 import { city } from "./messages/city";
+import { accounts } from "./messages/accounts";
 
-export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge, ...pages, ...assistant, ...progress, ...forms, ...staff, ...destinations, ...city } satisfies Catalog;
+export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge, ...pages, ...assistant, ...progress, ...forms, ...staff, ...destinations, ...city, ...accounts } satisfies Catalog;
 
 export type MessageKey = keyof typeof CATALOG;
 

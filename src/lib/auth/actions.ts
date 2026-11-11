@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "./password";
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from "./session";
 import { assertNotProduction } from "./dev-guard";
-import { createDemoVisitor, DemoLoginUnavailableError } from "@/lib/data/demo-session";
+import { createDemoVisitor, DemoLoginUnavailableError, isDemoLoginEnabled } from "@/lib/data/demo-session";
+import { registerUser } from "./register";
 
 async function setSessionCookie(userId: string, role: import("@prisma/client").Role) {
   const token = await createSessionToken({ sub: userId, role });
@@ -42,6 +43,25 @@ export async function loginAction(formData: FormData): Promise<void> {
   redirect(safeNext);
 }
 
+export async function registerAction(formData: FormData): Promise<void> {
+  const next = String(formData.get("next") ?? "/");
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  let created: { id: string; role: "MEMBER" };
+  try {
+    created = await registerUser({
+      name: String(formData.get("name") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      isAdult: formData.get("isAdult") === "on",
+      acceptsRules: formData.get("acceptsRules") === "on",
+    });
+  } catch (err) {
+    redirect(`/register?error=${errorParam(err)}&next=${encodeURIComponent(safeNext)}`);
+  }
+  await setSessionCookie(created.id, created.role);
+  redirect(safeNext);
+}
+
 export async function logoutAction(): Promise<void> {
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
@@ -73,6 +93,8 @@ export async function devLoginAction(formData: FormData): Promise<void> {
  * organizer, moderator or analyst, and never needs a password.
  */
 export async function demoLoginAction(): Promise<void> {
+  // Demo shortcuts do not exist in production: the same buttons lead to real sign-in instead.
+  if (!isDemoLoginEnabled()) redirect("/login");
   let visitor: { id: string; role: "MEMBER" };
   try {
     visitor = await createDemoVisitor();
@@ -83,5 +105,19 @@ export async function demoLoginAction(): Promise<void> {
     throw err;
   }
   await setSessionCookie(visitor.id, visitor.role);
+  redirect("/");
+}
+
+export async function deleteAccountAction(formData: FormData): Promise<void> {
+  const { requireUser } = await import("./current-user");
+  const { deleteOwnAccount } = await import("@/lib/data/account");
+  const user = await requireUser();
+  try {
+    await deleteOwnAccount(user.id, String(formData.get("confirm") ?? ""));
+  } catch (err) {
+    redirect(`/account?error=${errorParam(err)}`);
+  }
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
   redirect("/");
 }

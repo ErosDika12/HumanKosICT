@@ -32,7 +32,7 @@ const CREATE_BURST_LIMIT = 60; // new visitors per rolling 10 minutes, site-wide
 export class DemoLoginUnavailableError extends Error {}
 
 export function isDemoLoginEnabled(): boolean {
-  return process.env.DEMO_LOGIN_DISABLED !== "1";
+  return process.env.NODE_ENV !== "production" && process.env.DEMO_LOGIN_DISABLED !== "1";
 }
 
 let lastPurgeAt = 0;

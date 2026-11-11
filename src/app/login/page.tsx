@@ -46,7 +46,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <Card className="p-6">
         <h2 className="font-display text-xl font-semibold text-foreground">{t("login.staff.title")}</h2>
         <p className="mt-1 text-sm text-foreground-muted">
-          {t("login.staff.body")} {isProduction ? t("login.staff.prod") : t("login.staff.dev")}
+          {t("login.staff.body")} {isProduction ? "" : t("login.staff.dev")}
         </p>
         <form action={loginAction} className="mt-4 flex flex-col gap-4">
           <input type="hidden" name="next" value={next ?? "/"} />
@@ -62,6 +62,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             {t("login.staff.title")}
           </Button>
         </form>
+        <p className="mt-3 text-sm">
+          <Link href={`/register${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-medium text-brand-strong underline underline-offset-2">
+            {t("login.create")}
+          </Link>
+          {" · "}
+          <Link href="/safety" className="text-foreground-muted underline underline-offset-2">
+            {t("login.help")}
+          </Link>
+        </p>
         {!isProduction && (
           <p className="mt-3 text-xs text-foreground-muted">
             <Link href="/dev-login" className="underline underline-offset-2">

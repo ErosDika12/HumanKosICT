@@ -9,27 +9,26 @@ import { useI18n } from "@/components/LocaleProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   BellIcon,
-  BridgeIcon,
-  CalendarIcon,
   ChatIcon,
+  CityIcon,
   CloseIcon,
-  CommunityIcon,
   CompassIcon,
+  HomeIcon,
   MenuIcon,
+  PinIcon,
   SparkIcon,
   UserIcon,
-  UsersIcon,
 } from "@/components/icons";
 
 type IconType = ComponentType<{ size?: number; className?: string }>;
 
 /** The ordinary visitor journey: five destinations, nothing else. */
 const CORE_LINKS: { href: string; labelKey: string; Icon: IconType }[] = [
-  { href: "/discover", labelKey: "nav.discover", Icon: CompassIcon },
-  { href: "/people", labelKey: "nav.friends", Icon: UsersIcon },
-  { href: "/plans", labelKey: "nav.plans", Icon: CalendarIcon },
-  { href: "/communities", labelKey: "nav.communities", Icon: CommunityIcon },
-  { href: "/bridge", labelKey: "nav.bridge", Icon: BridgeIcon },
+  { href: "/", labelKey: "nav.home", Icon: HomeIcon },
+  { href: "/discover", labelKey: "nav.explore", Icon: CompassIcon },
+  { href: "/neighborhoods", labelKey: "nav.neighborhoods", Icon: PinIcon },
+  { href: "/city", labelKey: "nav.city", Icon: CityIcon },
+  { href: "/profile", labelKey: "nav.profile", Icon: UserIcon },
 ];
 
 export interface SiteHeaderUser {
@@ -48,8 +47,17 @@ function Badge({ count, label }: { count: number; label: string }) {
   );
 }
 
+/** Pages that live inside a destination keep that destination highlighted. */
+const ALSO_ACTIVE: Record<string, string[]> = {
+  "/discover": ["/communities", "/bridge"],
+  "/neighborhoods": ["/needs"],
+  "/profile": ["/plans", "/people", "/impact", "/account", "/messages", "/inbox"],
+};
+
 function isActive(pathname: string | null, href: string) {
-  return pathname === href || Boolean(pathname?.startsWith(href + "/"));
+  if (href === "/") return pathname === "/";
+  const matches = (h: string) => pathname === h || Boolean(pathname?.startsWith(h + "/"));
+  return matches(href) || (ALSO_ACTIVE[href] ?? []).some(matches);
 }
 
 function DemoLoginButton({ className = "" }: { className?: string }) {
@@ -144,7 +152,7 @@ export function SiteHeader({
                   }`}
                 >
                   {t(labelKey)}
-                  {href === "/plans" && <Badge count={planBadge} label={t("nav.plans")} />}
+                  {href === "/profile" && <Badge count={planBadge} label={t("nav.profile")} />}
                 </Link>
               );
             })}
@@ -294,7 +302,7 @@ export function SiteHeader({
                 >
                   <span className="relative">
                     <Icon size={22} />
-                    {href === "/plans" && <Badge count={planBadge} label={t("nav.plans")} />}
+                    {href === "/profile" && <Badge count={planBadge} label={t("nav.profile")} />}
                   </span>
                   <span className="max-w-full truncate">{t(labelKey)}</span>
                   {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-brand" />}

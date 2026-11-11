@@ -132,3 +132,20 @@ export const TrophyIcon = (p: P) => (
     <path d="M8 6H5a2 2 0 002 4M16 6h3a2 2 0 01-2 4M12 13v4M8.5 20h7" />
   </Icon>
 );
+
+export const HomeIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 11l8-7 8 7" />
+    <path d="M6 10v9h12v-9" />
+    <path d="M10 19v-5h4v5" />
+  </Icon>
+);
+
+export const CityIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M4 20V8l6-3v15" />
+    <path d="M10 20V10l10 3v7" />
+    <path d="M3 20h18" />
+    <path d="M7 10h.01M7 14h.01M14 15h.01M17 16h.01" />
+  </Icon>
+);

@@ -20,8 +20,9 @@ import { assistant } from "./messages/assistant";
 import { progress } from "./messages/progress";
 import { forms } from "./messages/forms";
 import { staff } from "./messages/staff";
+import { destinations } from "./messages/destinations";
 
-export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge, ...pages, ...assistant, ...progress, ...forms, ...staff } satisfies Catalog;
+export const CATALOG = { ...common, ...discover, ...errors, ...activity, ...home, ...social, ...community, ...bridge, ...pages, ...assistant, ...progress, ...forms, ...staff, ...destinations } satisfies Catalog;
 
 export type MessageKey = keyof typeof CATALOG;
 

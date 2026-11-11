@@ -2,12 +2,17 @@ import Link from "next/link";
 import { ActivityCard } from "@/components/ActivityCard";
 import { Photo } from "@/components/Photo";
 import { ButtonLink, Card, buttonClass } from "@/components/ui";
-import { ArrowIcon, BridgeIcon, CalendarIcon, CommunityIcon, UsersIcon } from "@/components/icons";
+import { ArrowIcon, CalendarIcon } from "@/components/icons";
 import { demoLoginAction } from "@/lib/auth/actions";
 import { getCurrentUserForRender } from "@/lib/auth/current-user";
 import { safeLoad } from "@/lib/safe-load";
 import { listActivities } from "@/lib/data/activities";
 import { listPlans } from "@/lib/data/invites";
+import { listCommunities } from "@/lib/data/communities";
+import { listNeeds } from "@/lib/data/needs";
+import { NEIGHBORHOODS } from "@/lib/neighborhoods";
+import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { localizeCommunityDescription } from "@/lib/i18n/content";
 import { getProgress } from "@/lib/data/progress";
 import { HumanQuest } from "@/components/HumanQuest";
 import { getUserInterests } from "@/lib/data/interests";
@@ -16,7 +21,7 @@ import { photoForActivity } from "@/lib/photos";
 import { isSimulatedPast } from "@/lib/simulated-clock";
 import { getI18n } from "@/lib/i18n/server";
 import { localizeActivity } from "@/lib/i18n/content";
-import { relativeDayLabel } from "@/lib/time-window";
+import { matchesWindow, relativeDayLabel } from "@/lib/time-window";
 
 // A mix a first-time visitor can act on: a weekend evening, an outdoor morning, something to build.
 const FEATURED_SLUGS = ["shetitje-fotografike-qender", "mbjellja-e-pemeve-dardania", "laborator-ideshe-eko-teknologji"];
@@ -60,11 +65,22 @@ export default async function HomePage() {
   };
   const nextPlanActivity = nextPlan ? upcoming.find((a) => a.slug === nextPlan.activity.slug) : undefined;
 
-  const entries = [
-    { href: "/people", Icon: UsersIcon, title: t("home.entry.friends.title"), body: t("home.entry.friends.body") },
-    { href: "/communities", Icon: CommunityIcon, title: t("home.entry.communities.title"), body: t("home.entry.communities.body") },
-    { href: "/bridge", Icon: BridgeIcon, title: t("home.entry.bridge.title"), body: t("home.entry.bridge.body") },
-  ];
+  // Sections below each load independently; one failing source only hides that section.
+  const [communitiesRes, needsRes] = await Promise.all([
+    safeLoad("home-communities", () => listCommunities(), []),
+    safeLoad("home-needs", () => listNeeds(user?.id), []),
+  ]);
+  const open = upcoming.filter((a) => a.capacity - a.rsvpCount > 0);
+  const todayWeekend = open
+    .filter((a) => a.date === SIMULATED_NOW_ISO || matchesWindow(a.date, "weekend"))
+    .sort((x, y) => (x.date + x.startTime).localeCompare(y.date + y.startTime))
+    .slice(0, 3);
+  const shownSlugs = new Set(todayWeekend.map((a) => a.slug));
+  const freeBeginner = open
+    .filter((a) => a.cost === "free" && (a.difficulty === "beginner" || a.difficulty === "all-levels") && !shownSlugs.has(a.slug))
+    .slice(0, 3);
+  const welcomingCommunities = communitiesRes.data.filter((c) => c.visibility === "public").slice(0, 3);
+  const helpNeed = needsRes.data.find((n) => n.status === "open") ?? null;
 
   return (
     <>
@@ -154,24 +170,6 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10" aria-labelledby="soon-title">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-              <h2 id="soon-title" className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {t("home.soon.title")}
-              </h2>
-              <Link href="/discover" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
-                {t("home.soon.all")}
-                <ArrowIcon size={16} />
-              </Link>
-            </div>
-            <ul className="grid gap-5 md:grid-cols-3">
-              {featured.map((a) => (
-                <li key={a.id} className="flex">
-                  <ActivityCard activity={a} />
-                </li>
-              ))}
-            </ul>
-          </section>
         </>
       )}
 
@@ -186,24 +184,119 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Compact entry points to the rest of the product — one line each. */}
-      <nav className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10" aria-label={t("shell.more")}>
-        <ul className="grid gap-3 sm:grid-cols-3">
-          {entries.map(({ href, Icon, title, body }) => (
-            <li key={href}>
-              <Link href={href} className="flex min-h-16 items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:bg-surface-muted">
-                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-tint text-brand-strong">
-                  <Icon size={20} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block font-display font-semibold text-foreground">{title}</span>
-                  <span className="block text-sm text-foreground-muted">{body}</span>
-                </span>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 sm:py-10">
+        <ActivityRow id="today-title" title={t("home.today.title")} items={todayWeekend} emptyText={t("home.empty")} allLabel={t("home.soon.all")} />
+        <ActivityRow id="free-title" title={t("home.free.title")} items={freeBeginner} emptyText={t("home.empty")} allLabel={t("home.soon.all")} />
+
+        {welcomingCommunities.length > 0 && (
+          <section aria-labelledby="communities-title" className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 id="communities-title" className="font-display text-2xl font-semibold tracking-tight text-foreground">
+                {t("home.communities.title")}
+              </h2>
+              <Link href="/communities" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
+                {t("home.communities.all")}
+                <ArrowIcon size={16} />
               </Link>
+            </div>
+            <ul className="grid gap-4 md:grid-cols-3">
+              {welcomingCommunities.map((c) => (
+                <li key={c.id} className="flex">
+                  <Card className="relative flex w-full flex-col gap-2 p-5 transition-shadow focus-within:shadow-md hover:shadow-md">
+                    <h3 className="font-display text-lg font-semibold text-foreground">
+                      <Link href={`/communities/${c.slug}`} className="after:absolute after:inset-0 after:content-[]">
+                        {c.name}
+                      </Link>
+                    </h3>
+                    <p className="line-clamp-2 text-sm text-foreground-muted">{localizeCommunityDescription(c, locale)}</p>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section aria-labelledby="neighborhoods-title" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 id="neighborhoods-title" className="font-display text-2xl font-semibold tracking-tight text-foreground">
+              {t("home.neighborhoods.title")}
+            </h2>
+            <Link href="/neighborhoods" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
+              {t("home.neighborhoods.all")}
+              <ArrowIcon size={16} />
+            </Link>
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            {NEIGHBORHOODS.map((n) => (
+              <li key={n.slug}>
+                <Link
+                  href={`/neighborhoods/${n.slug}`}
+                  className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground hover:bg-surface-muted"
+                >
+                  {t(`area.${n.areaEn}`)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {helpNeed && (
+          <section aria-labelledby="help-title">
+            <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1">
+                <h2 id="help-title" className="font-display text-xl font-semibold text-foreground">
+                  {t("home.help.title")}
+                </h2>
+                <p className="text-foreground-muted">{helpNeed.description}</p>
+              </div>
+              <ButtonLink href="/needs" variant="secondary" className="shrink-0">
+                {t("home.help.cta")}
+              </ButtonLink>
+            </Card>
+          </section>
+        )}
+
+        <p className="text-sm text-foreground-muted">{t("home.demoNote")}</p>
+      </div>
+    </>
+  );
+}
+
+function ActivityRow({
+  id,
+  title,
+  items,
+  emptyText,
+  allLabel,
+}: {
+  id: string;
+  title: string;
+  items: Awaited<ReturnType<typeof listActivities>>;
+  emptyText: string;
+  allLabel: string;
+}) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 id={id} className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+        <Link href="/discover" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
+          {allLabel}
+          <ArrowIcon size={16} />
+        </Link>
+      </div>
+      {items.length > 0 ? (
+        <ul className="grid gap-5 md:grid-cols-3">
+          {items.map((a) => (
+            <li key={a.id} className="flex">
+              <ActivityCard activity={a} />
             </li>
           ))}
         </ul>
-      </nav>
-    </>
+      ) : (
+        <p className="text-foreground-muted">{emptyText}</p>
+      )}
+    </section>
   );
 }

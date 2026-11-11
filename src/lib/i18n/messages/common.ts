@@ -26,7 +26,7 @@ export const common = {
   "nav.friends": { en: "Friends", sq: "Miqtë" },
   "nav.plans": { en: "Plans", sq: "Planet" },
   "nav.communities": { en: "Communities", sq: "Komunitetet" },
-  "nav.bridge": { en: "BRIDGE", sq: "BRIDGE" },
+  "nav.bridge": { en: "Help your neighborhood", sq: "Ndihmo lagjen tënde" },
   "nav.assistant": { en: "Assistant", sq: "Ndihmësi" },
   "nav.messages": { en: "Messages", sq: "Mesazhet" },
   "nav.inbox": { en: "Inbox", sq: "Njoftimet" },

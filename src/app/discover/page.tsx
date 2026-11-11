@@ -141,6 +141,27 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
         <p className="text-sm text-foreground-muted">{t("discover.today", { date: longDate(SIMULATED_NOW_ISO) })}</p>
       </div>
 
+      {/* Explore also covers communities and neighborhood help, so they are one tap from here. */}
+      <nav aria-label={t("nav.explore")}>
+        <ul className="flex flex-wrap gap-2">
+          <li>
+            <span aria-current="page" className="inline-flex min-h-11 items-center rounded-full bg-brand-tint px-4 text-sm font-semibold text-brand-strong">
+              {t("explore.activities")}
+            </span>
+          </li>
+          <li>
+            <Link href="/communities" className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground hover:bg-surface-muted">
+              {t("explore.communities")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/bridge" className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground hover:bg-surface-muted">
+              {t("explore.help")}
+            </Link>
+          </li>
+        </ul>
+      </nav>
+
       <form action="/discover" method="get" role="search" className="flex gap-2">
         {PARAM_KEYS.filter((k) => k !== "q" && sp[k]).map((k) => (
           <input key={k} type="hidden" name={k} value={sp[k]} />

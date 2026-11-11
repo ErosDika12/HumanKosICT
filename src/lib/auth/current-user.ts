@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { rethrowNextControlFlow } from "@/lib/next-rethrow";
 import type { Role, User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE, verifySessionToken } from "./session";
@@ -48,6 +49,8 @@ export async function getCurrentUserForRender(): Promise<CurrentUser | null> {
   try {
     return await getCurrentUser();
   } catch (err) {
+    // Keep Next.js dynamic-rendering bailouts (from cookies()) propagating; only real failures fall through.
+    await rethrowNextControlFlow(err);
     const e = err as { name?: string; code?: string };
     console.error(`[auth] session lookup failed: ${e?.name ?? "Error"}${e?.code ? ` (${e.code})` : ""}`);
     return null;

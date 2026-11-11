@@ -3,7 +3,7 @@ import type { Catalog } from "../catalog";
 export const progress = {
   "progress.title": { en: "My progress", sq: "Progresi im" },
   "progress.private": { en: "Only you can see this page.", sq: "Vetëm ti e sheh këtë faqe." },
-  "progress.login": { en: "Log in as demo to see your progress.", sq: "Hyr si demo për të parë progresin tënd." },
+  "progress.login": { en: "Sign in to see your progress.", sq: "Hyr për të parë progresin tënd." },
 
   "quest.title": { en: "Your next steps", sq: "Hapat e tu të radhës" },
   "quest.optional": { en: "Optional — ignore it any time.", sq: "Opsionale — injoroje kur të duash." },

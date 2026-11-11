@@ -222,6 +222,9 @@ export function SiteHeader({
                     {t("nav.devPersonas")}
                   </Link>
                 )}
+                <Link href="/register" className="px-2 text-sm font-medium text-brand-strong underline underline-offset-2">
+                  {t("nav.staffSignIn")}
+                </Link>
                 <DemoLoginButton />
               </>
             )}
@@ -274,7 +277,9 @@ export function SiteHeader({
               ) : (
                 <>
                   <MenuLink href="/needs" onNavigate={() => setMenuOpen(false)}>{t("nav.needs")}</MenuLink>
-                  <MenuLink href="/login" onNavigate={() => setMenuOpen(false)}>{t("nav.staffSignIn")}</MenuLink>
+                  <MenuLink href="/login" onNavigate={() => setMenuOpen(false)}>{t("action.demoLogin")}</MenuLink>
+                  <MenuLink href="/register" onNavigate={() => setMenuOpen(false)}>{t("nav.staffSignIn")}</MenuLink>
+                  <MenuLink href="/safety" onNavigate={() => setMenuOpen(false)}>{t("safety.title")}</MenuLink>
                   <div className="px-1 pt-1 sm:hidden">
                     <DemoLoginButton className="w-full" />
                   </div>

@@ -2,7 +2,7 @@ import type { Catalog } from "../catalog";
 
 /** Organizer and community forms. They deliberately collect English AND Albanian text, so both languages can be shown. */
 export const forms = {
-  "form.loginToContinue": { en: "Log in as demo to continue.", sq: "Hyr si demo për të vazhduar." },
+  "form.loginToContinue": { en: "Sign in to continue.", sq: "Hyr për të vazhduar." },
   "form.onlyOrganizer": { en: "Only this community's organizer can do that.", sq: "Vetëm organizatori i këtij komuniteti mund ta bëjë këtë." },
   "form.backToCommunity": { en: "Back to the community", sq: "Kthehu te komuniteti" },
   "form.titleEn": { en: "Title (English)", sq: "Titulli (anglisht)" },

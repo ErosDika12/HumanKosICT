@@ -24,7 +24,7 @@ export const community = {
   "community.visibility.public": { en: "Public", sq: "Publik" },
   "community.visibility.restricted": { en: "Restricted", sq: "I kufizuar" },
   "community.rules": { en: "Rules", sq: "Rregullat" },
-  "community.signInToJoin": { en: "Log in as demo to join", sq: "Hyr si demo për t'u bashkuar" },
+  "community.signInToJoin": { en: "Sign in to join", sq: "Hyr për t'u bashkuar" },
   "community.edit": { en: "Edit community", sq: "Ndrysho komunitetin" },
   "community.requestPending": { en: "Join request waiting for approval", sq: "Kërkesa për bashkim pret miratimin" },
   "community.leave": { en: "Leave community", sq: "Largohu nga komuniteti" },

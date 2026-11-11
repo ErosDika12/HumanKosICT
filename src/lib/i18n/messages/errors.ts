@@ -15,7 +15,7 @@ export const errors = {
   "err.demo_busy": { en: "The demo is busy right now — please try again in a few minutes.", sq: "Demoja është e zënë tani — provo përsëri pas disa minutash." },
   "err.reason_required": { en: "Please describe your concern.", sq: "Përshkruaj shqetësimin tënd." },
   "err.message_empty": { en: "Write a message first.", sq: "Shkruaj fillimisht një mesazh." },
-  "err.signin_required": { en: "Log in as demo first.", sq: "Hyr fillimisht si demo." },
+  "err.signin_required": { en: "Sign in first.", sq: "Hyr fillimisht." },
   "err.activity_canceled": { en: "This activity was canceled.", sq: "Ky aktivitet u anulua." },
   "err.self_action": { en: "You can't do that to yourself.", sq: "Këtë nuk mund ta bësh ndaj vetes." },
   "err.blocked": { en: "You can't add someone you have blocked or who blocked you.", sq: "Nuk mund të shtosh dikë që e ke bllokuar ose që të ka bllokuar." },

@@ -56,7 +56,7 @@ export const bridge = {
   "bridge.viewPlan": { en: "View your plan", sq: "Shiko planin tënd" },
   "bridge.joined": { en: "✓ You joined this project", sq: "✓ U bashkove me këtë projekt" },
   "bridge.viewProject": { en: "View project", sq: "Shiko projektin" },
-  "bridge.loginToJoin": { en: "Log in as demo to join", sq: "Hyr si demo për t'u bashkuar" },
+  "bridge.loginToJoin": { en: "Sign in to join", sq: "Hyr për t'u bashkuar" },
   "bridge.next.label": { en: "Your next step", sq: "Hapi yt i radhës" },
   "bridge.next.review": { en: "See why this match works", sq: "Shiko pse funksionon ky përputhje" },
   "bridge.next.review.desc": { en: "An organizer of {a} or {b} decides. You can read the reasoning and follow along.", sq: "Një organizator i {a} ose {b} vendos. Mund ta lexosh arsyetimin dhe ta ndjekësh." },

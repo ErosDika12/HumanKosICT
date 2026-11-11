@@ -7,7 +7,7 @@ export const assistant = {
   "assistant.lead": { en: "A small demo helper that answers from the activities, friends, plans and BRIDGE project stored in this demo.", sq: "Një ndihmës i vogël demo që përgjigjet nga aktivitetet, miqtë, planet dhe projekti BRIDGE të ruajtura në këtë demo." },
   "assistant.mode.rules": { en: "Limited demo helper · rules, not an AI model", sq: "Ndihmës i kufizuar demo · rregulla, jo model AI" },
   "assistant.mode.ai": { en: "AI phrasing on (server-side)", sq: "Formulim me AI i aktivizuar (në server)" },
-  "assistant.loginHint": { en: "Log in as demo for answers about your friends and plans", sq: "Hyr si demo për përgjigje për miqtë dhe planet e tua" },
+  "assistant.loginHint": { en: "Sign in for answers about your friends and plans", sq: "Hyr për përgjigje për miqtë dhe planet e tua" },
   "assistant.conversation": { en: "Conversation with the demo helper", sq: "Biseda me ndihmësin demo" },
   "assistant.suggestions": { en: "Suggested questions", sq: "Pyetje të sugjeruara" },
   "assistant.placeholder": { en: "Ask about activities, friends, BRIDGE or your plans…", sq: "Pyet për aktivitete, miq, BRIDGE ose planet e tua…" },
@@ -51,7 +51,7 @@ export const assistant = {
   "assistant.unknown": { en: "I'm not sure what you're after. I can find activities (try “What can I do this weekend?”), suggest something to do with a friend (“Which activity could I attend with Arta?”), explain the BRIDGE project, or summarise your plans.", sq: "Nuk jam i sigurt çfarë kërkon. Mund të gjej aktivitete (provo “Çfarë mund të bëj këtë fundjavë?”), të sugjeroj diçka për të bërë me një mik (“Cilin aktivitet mund të ndjek me Arta?”), të shpjegoj projektin BRIDGE ose të përmbledh planet e tua." },
   "assistant.found": { en: "Here's what I found{filters}: {list}.{login}", sq: "Ja çfarë gjeta{filters}: {list}.{login}" },
   "assistant.foundAnother": { en: "Here's another option{filters}: {list}.{login}", sq: "Ja një mundësi tjetër{filters}: {list}.{login}" },
-  "assistant.loginHintShort": { en: " Log in as demo for picks based on your interests.", sq: " Hyr si demo për sugjerime sipas interesave të tua." },
+  "assistant.loginHintShort": { en: " Sign in for picks based on your interests.", sq: " Hyr për sugjerime sipas interesave të tua." },
   "assistant.everyMatch": { en: "That's every matching activity I have{filters} — you've seen all {n}.", sq: "Këto janë të gjitha aktivitetet që përputhen{filters} — i ke parë të gjitha {n}." },
   "assistant.noMatchAlt": { en: "Nothing matches everything you asked for{filters}. Below is the closest alternative — it keeps your other requirements but does not match {what} you asked for.", sq: "Asgjë nuk përputhet me gjithçka që kërkove{filters}. Më poshtë është alternativa më e afërt — i mban kërkesat e tjera, por nuk përputhet me {what} që kërkove." },
   "assistant.noMatchAlts": { en: "Nothing matches everything you asked for{filters}. Below are the closest alternatives — they keep your other requirements but do not match {what} you asked for.", sq: "Asgjë nuk përputhet me gjithçka që kërkove{filters}. Më poshtë janë alternativat më të afërta — i mbajnë kërkesat e tjera, por nuk përputhen me {what} që kërkove." },
@@ -61,7 +61,7 @@ export const assistant = {
   "assistant.unmet.cost": { en: "the price", sq: "çmimin" },
   "assistant.altLabel": { en: "Alternative — not a match on {what}", sq: "Alternativë — nuk përputhet me {what}" },
 
-  "assistant.friend.login": { en: "Friends live on your demo account. Log in as demo (one click, no password) and I can suggest activities that suit you and a friend.", sq: "Miqtë janë te llogaria jote demo. Hyr si demo (një klikim, pa fjalëkalim) dhe mund të sugjeroj aktivitete që ju përshtaten ty dhe një miku." },
+  "assistant.friend.login": { en: "Friends live on your demo account. Sign in and I can suggest activities that suit you and a friend.", sq: "Miqtë janë te llogaria jote demo. Hyr dhe mund të sugjeroj aktivitete që ju përshtaten ty dhe një miku." },
   "assistant.friend.who": { en: "Who would you like to go with? Your friends: {names}.", sq: "Me kë dëshiron të shkosh? Miqtë e tu: {names}." },
   "assistant.friend.none": { en: "You don't have any friends yet — add a demo friend first and I'll find something that fits you both.", sq: "Ende nuk ke miq — shto një mik demo dhe do të gjej diçka që ju përshtatet të dyve." },
   "assistant.friend.notYet": { en: "{name} isn't one of your friends yet. Add them and I can look for something that suits you both.", sq: "{name} nuk është ende mik i yti. Shtoje dhe mund të kërkoj diçka që ju përshtatet të dyve." },
@@ -80,10 +80,10 @@ export const assistant = {
   "assistant.bridge.review": { en: "This proposal is still being reviewed, so there is nothing to join yet.", sq: "Ky propozim është ende në shqyrtim, prandaj nuk ka ende ku të bashkohesh." },
   "assistant.bridge.text": { en: "{a} and {b} are working together on this need: “{need}” Current step: {step}. {rest}{login}", sq: "{a} dhe {b} po punojnë bashkë për këtë nevojë: “{need}” Hapi aktual: {step}. {rest}{login}" },
   "assistant.bridge.openHint": { en: "Open BRIDGE to see each step.", sq: "Hap BRIDGE për të parë çdo hap." },
-  "assistant.bridge.loginHint": { en: " Log in as demo to join.", sq: " Hyr si demo për t'u bashkuar." },
+  "assistant.bridge.loginHint": { en: " Sign in to join.", sq: " Hyr për t'u bashkuar." },
   "assistant.bridge.stage": { en: "{label} — {detail}", sq: "{label} — {detail}" },
 
-  "assistant.plans.login": { en: "Your plans are stored on your demo account. Log in as demo to see them.", sq: "Planet e tua ruhen në llogarinë demo. Hyr si demo për t'i parë." },
+  "assistant.plans.login": { en: "Your plans are stored on your demo account. Sign in to see them.", sq: "Planet e tua ruhen në llogarinë demo. Hyr për t'i parë." },
   "assistant.plans.none": { en: "You have no upcoming plans yet. RSVP to an activity or invite a friend and it will appear here.", sq: "Ende nuk ke plane të ardhshme. Konfirmo një aktivitet ose fto një mik dhe do të shfaqet këtu." },
   "assistant.plans.some.one": { en: "You have {n} upcoming plan: {list}.", sq: "Ke {n} plan të ardhshëm: {list}." },
   "assistant.plans.some.other": { en: "You have {n} upcoming plans: {list}.", sq: "Ke {n} plane të ardhshëm: {list}." },
@@ -93,7 +93,7 @@ export const assistant = {
   "assistant.plans.invitedBy": { en: "invited by {name}", sq: "të ftoi {name}" },
   "assistant.plans.simulated": { en: ", simulated reply", sq: ", përgjigje e simuluar" },
 
-  "assistant.people.login": { en: "Log in as demo and I can show demo friends who share your interests.", sq: "Hyr si demo dhe mund të të tregoj miq demo që ndajnë interesat e tua." },
+  "assistant.people.login": { en: "Sign in and I can show demo friends who share your interests.", sq: "Hyr dhe mund të të tregoj miq demo që ndajnë interesat e tua." },
   "assistant.people.some": { en: "These demo friends share something with you: {names}. They are fictional and never reply live.", sq: "Këta miq demo ndajnë diçka me ty: {names}. Janë fiktivë dhe nuk përgjigjen drejtpërdrejt." },
   "assistant.people.none": { en: "You already have every demo friend who shares something with you.", sq: "I ke tashmë të gjithë miqtë demo që ndajnë diçka me ty." },
 

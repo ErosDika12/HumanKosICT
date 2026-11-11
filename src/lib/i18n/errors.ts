@@ -45,6 +45,23 @@ const PATTERNS: [RegExp, string][] = [
   [/only edit your own profile/i, "own_profile"],
   [/Enter your email and password/i, "credentials_missing"],
   [/Invalid email or password/i, "credentials_invalid"],
+  [/Unknown neighborhood/i, "unknown_area"],
+  [/following the maximum number of neighborhoods/i, "follow_limit"],
+  [/Choose a valid category/i, "bad_category"],
+  [/Description must be at least/i, "too_short"],
+  [/limit reached/i, "daily_limit"],
+  [/Location coordinates are not valid/i, "bad_coords"],
+  [/Enter a valid http/i, "bad_link"],
+  [/Choose the report this duplicates/i, "duplicate_target"],
+  [/This status change is not allowed/i, "status_not_allowed"],
+  [/Only an authorized partner/i, "partner_only"],
+  [/Only this project.s organizers/i, "project_organizer_only"],
+  [/Set a responsible organizer first/i, "need_responsible"],
+  [/must be an organizer/i, "must_be_organizer"],
+  [/already completed/i, "project_completed"],
+  [/Review date must be/i, "bad_review_date"],
+  [/Expiry must be after/i, "bad_expiry"],
+  [/not found/i, "not_found"],
 ];
 
 export function errorCodeFor(message: string): string {

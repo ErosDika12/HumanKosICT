@@ -202,6 +202,7 @@ export function SiteHeader({
                         <>
                           <p className="mt-1 px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted">{t("nav.staff")}</p>
                           {showModeration && <MenuLink href="/moderation" onNavigate={() => setUserOpen(false)}>{t("nav.moderation")}</MenuLink>}
+                          {showModeration && <MenuLink href="/city/manage" onNavigate={() => setUserOpen(false)}>{t("manage.title")}</MenuLink>}
                           {showMunicipality && <MenuLink href="/municipality" onNavigate={() => setUserOpen(false)}>{t("nav.municipality")}</MenuLink>}
                         </>
                       )}
@@ -262,6 +263,7 @@ export function SiteHeader({
                   <MenuLink href="/impact" onNavigate={() => setMenuOpen(false)}>{t("nav.progress")}</MenuLink>
                   <MenuLink href="/needs" onNavigate={() => setMenuOpen(false)}>{t("nav.needs")}</MenuLink>
                   {showModeration && <MenuLink href="/moderation" onNavigate={() => setMenuOpen(false)}>{t("nav.moderation")}</MenuLink>}
+                  {showModeration && <MenuLink href="/city/manage" onNavigate={() => setMenuOpen(false)}>{t("manage.title")}</MenuLink>}
                   {showMunicipality && <MenuLink href="/municipality" onNavigate={() => setMenuOpen(false)}>{t("nav.municipality")}</MenuLink>}
                   <form action={logoutAction}>
                     <button type="submit" className="w-full rounded-xl px-3 py-3 text-left text-base font-medium text-foreground hover:bg-surface-muted">

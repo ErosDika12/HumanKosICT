@@ -5,6 +5,10 @@ import { ActivityCard } from "@/components/ActivityCard";
 import { Card, EmptyState, Notice, PageShell, Pill, ButtonLink } from "@/components/ui";
 import { getCurrentUserForRender } from "@/lib/auth/current-user";
 import { getNeighborhoodOverview } from "@/lib/data/neighborhoods";
+import { listFollowedSlugs } from "@/lib/data/follows";
+import { followNeighborhoodAction, unfollowNeighborhoodAction } from "@/lib/actions/city-actions";
+import { errorMessage } from "@/lib/i18n/errors";
+import { buttonClass } from "@/components/ui";
 import { getI18n } from "@/lib/i18n/server";
 import { localizeCommunityDescription } from "@/lib/i18n/content";
 import { neighborhoodBySlug } from "@/lib/neighborhoods";
@@ -17,15 +21,22 @@ export async function generateMetadata({ params }: PageProps<"/neighborhoods/[sl
   return { title: n ? t(`area.${n.areaEn}`) : t("nav.neighborhoods") };
 }
 
-export default async function NeighborhoodPage({ params }: PageProps<"/neighborhoods/[slug]">) {
+export default async function NeighborhoodPage({ params, searchParams }: PageProps<"/neighborhoods/[slug]">) {
   const { slug } = await params;
   const neighborhood = neighborhoodBySlug(slug);
   if (!neighborhood) notFound();
 
   const { t, locale } = await getI18n();
   const user = await getCurrentUserForRender();
-  const overview = await safeLoad("neighborhood", () => getNeighborhoodOverview(slug, user?.id), null);
+  const sp = await searchParams;
+  const errorCode = typeof sp.error === "string" ? sp.error : undefined;
+  const [overview, followed] = await Promise.all([
+    safeLoad("neighborhood", () => getNeighborhoodOverview(slug, user?.id), null),
+    user ? safeLoad("followed", () => listFollowedSlugs(user.id), [] as string[]) : Promise.resolve({ ok: true as const, data: [] as string[] }),
+  ]);
   const data = overview.data;
+  const isFollowing = followed.data.includes(slug);
+  const err = errorMessage(t, errorCode);
 
   return (
     <PageShell className="max-w-5xl">
@@ -37,6 +48,21 @@ export default async function NeighborhoodPage({ params }: PageProps<"/neighborh
       </header>
 
       {!overview.ok && <Notice kind="info">{t("state.unavailable.body")}</Notice>}
+      {err && <Notice kind="error">{err}</Notice>}
+
+      <div className="flex flex-col gap-2">
+        {user ? (
+          <form action={isFollowing ? unfollowNeighborhoodAction : followNeighborhoodAction}>
+            <input type="hidden" name="slug" value={slug} />
+            <button type="submit" aria-pressed={isFollowing} className={buttonClass(isFollowing ? "secondary" : "primary", "md")}>
+              {isFollowing ? `${t("neighborhoods.following")} · ${t("neighborhoods.unfollow")}` : t("neighborhoods.follow")}
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-foreground-muted">{t("neighborhoods.signIn")}</p>
+        )}
+        <p className="text-sm text-foreground-muted">{t("neighborhoods.followHint")}</p>
+      </div>
 
       <section aria-labelledby="n-activities" className="flex flex-col gap-3">
         <h2 id="n-activities" className="font-display text-2xl font-semibold text-foreground">

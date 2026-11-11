@@ -83,6 +83,14 @@ model User {
   connectionsReceived ConnectionRequest[] @relation("ConnectionTo")
   reportsAboutMe    Report[]            @relation("ReportedUser")
   municipalityNotes MunicipalityRecommendationNote[]
+  neighborhoodFollows  NeighborhoodFollow[]   @relation("NeighborhoodFollows")
+  cityServicesCreated  CityService[]          @relation("CityServiceCreator")
+  cityNoticesCreated   CityNotice[]           @relation("CityNoticeCreator")
+  issueReports         IssueReport[]          @relation("IssueReporter")
+  cityProposals        CityProposal[]         @relation("CityProposalAuthor")
+  cityProposalSupports CityProposalSupport[]  @relation("CityProposalSupporter")
+  projectsResponsible  Project[]              @relation("ProjectResponsible")
+  projectUpdates       ProjectUpdate[]        @relation("ProjectUpdateAuthor")
 
   @@index([role])
 }
@@ -372,10 +380,23 @@ model Project {
   status      ProjectStatus @default(ACTIVE)
   volunteersNeeded Int
   createdAt   DateTime      @default(now())
+  /// BRIDGE workflow (all optional, additive). Display stage is derived: ACTIVE with no
+  /// startedAt = proposal; ACTIVE with startedAt = in progress; COMPLETED counts as a
+  /// confirmed outcome only when completionEvidence is recorded.
+  responsibleOrganizerId String?
+  scheduledFor       DateTime?
+  skillsNeeded       String?
+  materialsNeeded    String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  completionNote     String?
+  completionEvidence String?
 
   community  Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
   volunteers ProjectVolunteer[]
   bridgeProposal BridgeProposal? @relation("BridgeDraftProject")
+  responsibleOrganizer User?     @relation("ProjectResponsible", fields: [responsibleOrganizerId], references: [id], onDelete: SetNull)
+  updates    ProjectUpdate[]
 }
 
 enum VolunteerStatus {
@@ -700,4 +721,165 @@ model MunicipalityRecommendationNote {
   updatedBy User @relation(fields: [updatedById], references: [id])
 
   @@unique([areaSq, category])
+}
+
+// ---------------------------------------------------------------------------
+// Neighborhoods, City and BRIDGE workflow (additive)
+// ---------------------------------------------------------------------------
+
+/// A resident following a neighborhood (slug from src/lib/neighborhoods.ts). Optional, never GPS.
+model NeighborhoodFollow {
+  id        String   @id @default(cuid())
+  userId    String
+  slug      String
+  createdAt DateTime @default(now())
+
+  user User @relation("NeighborhoodFollows", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slug])
+}
+
+enum CityContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// A city service entry. Only shown when PUBLISHED, and always with its source and review date.
+model CityService {
+  id            String            @id @default(cuid())
+  slug          String            @unique
+  name          String
+  nameSq        String
+  description   String
+  descriptionSq String
+  category      String
+  officialUrl   String
+  sourceName    String
+  reviewedAt    DateTime
+  status        CityContentStatus @default(DRAFT)
+  createdById   String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  createdBy User @relation("CityServiceCreator", fields: [createdById], references: [id])
+
+  @@index([status])
+}
+
+/// A dated, sourced city notice. Hidden automatically once expiresAt has passed.
+model CityNotice {
+  id          String            @id @default(cuid())
+  title       String
+  titleSq     String
+  body        String
+  bodySq      String
+  sourceName  String
+  sourceUrl   String?
+  publishedAt DateTime
+  expiresAt   DateTime?
+  status      CityContentStatus @default(DRAFT)
+  createdById String
+  createdAt   DateTime          @default(now())
+
+  createdBy User @relation("CityNoticeCreator", fields: [createdById], references: [id])
+
+  @@index([status])
+}
+
+/// RECEIVED means received by Human Network only. MUNICIPALITY_ACKNOWLEDGED and RESOLVED
+/// require an authorized partner (see src/lib/data/issues.ts) and a recorded reference.
+enum IssueStatus {
+  RECEIVED
+  UNDER_REVIEW
+  DUPLICATE
+  DECLINED
+  MUNICIPALITY_ACKNOWLEDGED
+  RESOLVED
+}
+
+/// A resident issue report. Exact coordinates and the reporter stay private; public
+/// views only ever use the generalized areaSlug.
+model IssueReport {
+  id            String      @id @default(cuid())
+  reporterId    String
+  category      String
+  description   String
+  areaSlug      String
+  latitude      Float?
+  longitude     Float?
+  status        IssueStatus @default(RECEIVED)
+  duplicateOfId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  reporter    User          @relation("IssueReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  duplicateOf IssueReport?  @relation("IssueDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates  IssueReport[] @relation("IssueDuplicates")
+  events      IssueEvent[]
+
+  @@index([status])
+  @@index([areaSlug])
+}
+
+/// Append-only tracking history of an issue, visible to the reporter.
+model IssueEvent {
+  id        String      @id @default(cuid())
+  issueId   String
+  status    IssueStatus
+  note      String?
+  actorId   String?
+  createdAt DateTime    @default(now())
+
+  issue IssueReport @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+enum ProposalStatus {
+  OPEN
+  CLOSED
+  HIDDEN
+}
+
+/// A community proposal. Never an official municipal consultation.
+model CityProposal {
+  id        String         @id @default(cuid())
+  authorId  String
+  title     String
+  body      String
+  areaSlug  String?
+  status    ProposalStatus @default(OPEN)
+  createdAt DateTime       @default(now())
+
+  author   User                  @relation("CityProposalAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  supports CityProposalSupport[]
+
+  @@index([status])
+}
+
+model CityProposalSupport {
+  id         String   @id @default(cuid())
+  proposalId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  proposal CityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  user     User         @relation("CityProposalSupporter", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, userId])
+}
+
+/// Progress note on a BRIDGE / neighborhood project.
+model ProjectUpdate {
+  id        String   @id @default(cuid())
+  projectId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation("ProjectUpdateAuthor", fields: [authorId], references: [id])
+
+  @@index([projectId])
 }

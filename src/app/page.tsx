@@ -11,6 +11,7 @@ import { listPlans } from "@/lib/data/invites";
 import { listCommunities } from "@/lib/data/communities";
 import { listNeeds } from "@/lib/data/needs";
 import { NEIGHBORHOODS } from "@/lib/neighborhoods";
+import { listFollowedSlugs } from "@/lib/data/follows";
 import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
 import { localizeCommunityDescription } from "@/lib/i18n/content";
 import { getProgress } from "@/lib/data/progress";
@@ -66,10 +67,14 @@ export default async function HomePage() {
   const nextPlanActivity = nextPlan ? upcoming.find((a) => a.slug === nextPlan.activity.slug) : undefined;
 
   // Sections below each load independently; one failing source only hides that section.
-  const [communitiesRes, needsRes] = await Promise.all([
+  const [communitiesRes, needsRes, followedRes] = await Promise.all([
     safeLoad("home-communities", () => listCommunities(), []),
     safeLoad("home-needs", () => listNeeds(user?.id), []),
+    safeLoad("home-followed", () => (user ? listFollowedSlugs(user.id) : Promise.resolve([] as string[])), [] as string[]),
   ]);
+  // Neighborhoods the person follows come first; everyone else sees the full list.
+  const followed = new Set(followedRes.data);
+  const orderedNeighborhoods = [...NEIGHBORHOODS].sort((a, b) => Number(followed.has(b.slug)) - Number(followed.has(a.slug)));
   const open = upcoming.filter((a) => a.capacity - a.rsvpCount > 0);
   const todayWeekend = open
     .filter((a) => a.date === SIMULATED_NOW_ISO || matchesWindow(a.date, "weekend"))
@@ -227,13 +232,15 @@ export default async function HomePage() {
             </Link>
           </div>
           <ul className="flex flex-wrap gap-2">
-            {NEIGHBORHOODS.map((n) => (
+            {orderedNeighborhoods.map((n) => (
               <li key={n.slug}>
                 <Link
                   href={`/neighborhoods/${n.slug}`}
                   className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground hover:bg-surface-muted"
                 >
+                  {followed.has(n.slug) && <span className="sr-only">{t("neighborhoods.following")}: </span>}
                   {t(`area.${n.areaEn}`)}
+                  {followed.has(n.slug) && <span aria-hidden="true"> ✓</span>}
                 </Link>
               </li>
             ))}

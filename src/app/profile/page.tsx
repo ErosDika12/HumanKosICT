@@ -6,6 +6,8 @@ import { ArrowIcon, CalendarIcon } from "@/components/icons";
 import { demoLoginAction } from "@/lib/auth/actions";
 import { getCurrentUserForRender } from "@/lib/auth/current-user";
 import { listPlans } from "@/lib/data/invites";
+import { listFollowedSlugs } from "@/lib/data/follows";
+import { neighborhoodBySlug } from "@/lib/neighborhoods";
 import { getProgress } from "@/lib/data/progress";
 import { getI18n } from "@/lib/i18n/server";
 import { localizeActivity } from "@/lib/i18n/content";
@@ -49,9 +51,10 @@ export default async function ProfilePage() {
     );
   }
 
-  const [plansRes, progressRes] = await Promise.all([
+  const [plansRes, progressRes, followedRes] = await Promise.all([
     safeLoad("profile-plans", () => listPlans(user.id), []),
     safeLoad("profile-progress", () => getProgress(user.id), null),
+    safeLoad("profile-followed", () => listFollowedSlugs(user.id), [] as string[]),
   ]);
   const upcoming = plansRes.data.filter((p) => !p.activity.isPast && !p.activity.isCanceled && p.myRsvp === "confirmed").slice(0, 3);
 
@@ -94,6 +97,32 @@ export default async function ProfilePage() {
         )}
         <Link href="/plans" className="inline-flex min-h-10 w-fit items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
           {t("profile.allPlans")}
+          <ArrowIcon size={16} />
+        </Link>
+      </section>
+
+      <section aria-labelledby="p-neighborhoods" className="flex flex-col gap-3">
+        <h2 id="p-neighborhoods" className="font-display text-2xl font-semibold text-foreground">
+          {t("profile.neighborhoods")}
+        </h2>
+        {followedRes.data.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {followedRes.data.map((slug) => {
+              const n = neighborhoodBySlug(slug);
+              return n ? (
+                <li key={slug}>
+                  <Link href={`/neighborhoods/${slug}`} className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground hover:bg-surface-muted">
+                    {t(`area.${n.areaEn}`)}
+                  </Link>
+                </li>
+              ) : null;
+            })}
+          </ul>
+        ) : (
+          <p className="text-foreground-muted">{t("profile.noNeighborhoods")}</p>
+        )}
+        <Link href="/neighborhoods" className="inline-flex min-h-10 w-fit items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline">
+          {t("home.neighborhoods.all")}
           <ArrowIcon size={16} />
         </Link>
       </section>

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentUserForRender } from "@/lib/auth/current-user";
+import { safeLoad } from "@/lib/safe-load";
 import { unreadNotificationCount } from "@/lib/data/notifications";
 import { unreadMessageCount } from "@/lib/data/messages";
 import { countPendingInvitesForViewer, countUpcomingPlans } from "@/lib/data/invites";
@@ -37,17 +38,24 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUserForRender();
   const devMode = process.env.NODE_ENV !== "production";
   const locale = await getLocale();
   const { t } = await getI18n();
   const [unreadCount, unreadMessages, pendingInvites, upcomingPlans] = user
-    ? await Promise.all([
-        unreadNotificationCount(user.id),
-        unreadMessageCount(user.id),
-        countPendingInvitesForViewer(user.id),
-        countUpcomingPlans(user.id),
-      ])
+    ? (
+        await safeLoad(
+          "header-counts",
+          () =>
+            Promise.all([
+              unreadNotificationCount(user.id),
+              unreadMessageCount(user.id),
+              countPendingInvitesForViewer(user.id),
+              countUpcomingPlans(user.id),
+            ]),
+          [0, 0, 0, 0]
+        )
+      ).data
     : [0, 0, 0, 0];
 
   return (

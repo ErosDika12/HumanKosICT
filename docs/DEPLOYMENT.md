@@ -29,13 +29,19 @@ into a new folder under `prisma/migrations-postgres/`.
 `vercel.json` sets the build command:
 
 ```
-prisma migrate deploy --config prisma.production.config.ts   # apply PostgreSQL migrations
-prisma db seed        --config prisma.production.config.ts   # idempotent fictional demo data
-npm run build                                                 # prisma generate + next build
+node scripts/predeploy.mjs   # prisma migrate deploy (non-destructive); NO seeding
+npm run build                # prisma generate + next build
 ```
 
-The seed is idempotent (upserts by id), so re-running it on every deploy is safe
-and self-healing. It never touches one-click demo visitors' rows.
+An unreachable database (paused Supabase project, outage) only logs a warning and does
+not block the deploy; run `npm run db:migrate:prod` once it is back. A migration that
+actually errors still fails the build. The demo seed no longer runs on deploy — load it
+deliberately with `npm run db:seed:prod`.
+
+**Free-tier Supabase projects pause after inactivity.** A paused project makes every
+query fail (`tenant/user ... not found`); the site now shows an honest "unavailable"
+state, and `GET /api/health` reports `database: unavailable` (HTTP 503). Restore the
+project from the Supabase dashboard.
 
 ## Environment variables (Vercel → Project → Settings → Environment Variables)
 

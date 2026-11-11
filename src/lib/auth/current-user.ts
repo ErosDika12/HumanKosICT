@@ -38,6 +38,22 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return user;
 }
 
+/**
+ * Rendering-only variant: if the database is unreachable the visitor is shown
+ * the signed-out view instead of a crash. It fails CLOSED — a database error
+ * never grants a user. Authorization paths must keep using getCurrentUser /
+ * requireUser / requireRole, which surface the error.
+ */
+export async function getCurrentUserForRender(): Promise<CurrentUser | null> {
+  try {
+    return await getCurrentUser();
+  } catch (err) {
+    const e = err as { name?: string; code?: string };
+    console.error(`[auth] session lookup failed: ${e?.name ?? "Error"}${e?.code ? ` (${e.code})` : ""}`);
+    return null;
+  }
+}
+
 export class AuthorizationError extends Error {}
 
 export async function requireUser(): Promise<CurrentUser> {

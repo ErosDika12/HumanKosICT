@@ -123,6 +123,12 @@ export const common = {
     en: "The page could not be loaded. Please try again in a moment.",
     sq: "Faqja nuk u ngarkua. Provo përsëri pas pak.",
   },
+  "state.unavailable.title": { en: "Activities are temporarily unavailable", sq: "Aktivitetet nuk janë të disponueshme përkohësisht" },
+  "state.unavailable.body": {
+    en: "We could not load activities right now. The rest of the site still works. Please try again in a few minutes.",
+    sq: "Nuk mundëm t’i ngarkojmë aktivitetet tani. Pjesa tjetër e faqes funksionon. Provo përsëri pas disa minutash.",
+  },
+  "state.retry": { en: "Try again", sq: "Provo përsëri" },
   "state.demoExample": { en: "demo example", sq: "shembull demo" },
   "state.simulated": { en: "simulated", sq: "i simuluar" },
   "state.fictional": { en: "fictional", sq: "fiktiv" },

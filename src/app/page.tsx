@@ -4,7 +4,8 @@ import { Photo } from "@/components/Photo";
 import { ButtonLink, Card, buttonClass } from "@/components/ui";
 import { ArrowIcon, BridgeIcon, CalendarIcon, CommunityIcon, UsersIcon } from "@/components/icons";
 import { demoLoginAction } from "@/lib/auth/actions";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentUserForRender } from "@/lib/auth/current-user";
+import { safeLoad } from "@/lib/safe-load";
 import { listActivities } from "@/lib/data/activities";
 import { listPlans } from "@/lib/data/invites";
 import { getProgress } from "@/lib/data/progress";
@@ -30,13 +31,18 @@ const RELATIVE_KEY: Record<string, string> = {
 
 export default async function HomePage() {
   const { t, locale, shortDate } = await getI18n();
-  const user = await getCurrentUser();
-  const [all, plans, interestIds, progress] = await Promise.all([
-    listActivities(),
-    user ? listPlans(user.id) : Promise.resolve([]),
-    user ? getUserInterests(user.id) : Promise.resolve([]),
-    user ? getProgress(user.id) : Promise.resolve(null),
+  const user = await getCurrentUserForRender();
+  // Each source loads independently: if one is unavailable the rest of the page still renders.
+  const [activitiesRes, plansRes, interestsRes, progressRes] = await Promise.all([
+    safeLoad("home-activities", () => listActivities(), []),
+    safeLoad("home-plans", () => (user ? listPlans(user.id) : Promise.resolve([])), []),
+    safeLoad("home-interests", () => (user ? getUserInterests(user.id) : Promise.resolve([])), []),
+    safeLoad("home-progress", () => (user ? getProgress(user.id) : Promise.resolve(null)), null),
   ]);
+  const all = activitiesRes.data;
+  const plans = plansRes.data;
+  const interestIds = interestsRes.data;
+  const progress = progressRes.data;
   const upcoming = all.filter((a) => !isSimulatedPast(a.date));
   const featured = FEATURED_SLUGS.map((s) => upcoming.find((a) => a.slug === s)).filter((a) => a !== undefined);
 
@@ -167,6 +173,17 @@ export default async function HomePage() {
             </ul>
           </section>
         </>
+      )}
+
+      {!activitiesRes.ok && (
+        <section className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6" aria-labelledby="unavailable-title">
+          <div role="status" className="rounded-2xl border border-border bg-surface-muted p-5">
+            <h2 id="unavailable-title" className="font-display text-lg font-semibold text-foreground">
+              {t("state.unavailable.title")}
+            </h2>
+            <p className="mt-1 text-sm text-foreground-muted">{t("state.unavailable.body")}</p>
+          </div>
+        </section>
       )}
 
       {/* Compact entry points to the rest of the product — one line each. */}

@@ -74,6 +74,7 @@ function DemoLoginButton({ className = "" }: { className?: string }) {
 export function SiteHeader({
   user,
   devMode,
+  assistantEnabled,
   unreadCount = 0,
   unreadMessages = 0,
   pendingInvites = 0,
@@ -81,6 +82,7 @@ export function SiteHeader({
 }: {
   user: SiteHeaderUser | null;
   devMode: boolean;
+  assistantEnabled: boolean;
   unreadCount?: number;
   unreadMessages?: number;
   pendingInvites?: number;
@@ -159,15 +161,17 @@ export function SiteHeader({
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <Link
-              href="/assistant"
-              aria-current={isActive(pathname, "/assistant") ? "page" : undefined}
-              title={t("nav.assistant")}
-              className="inline-flex items-center rounded-full p-2 text-foreground-muted hover:bg-surface-muted hover:text-foreground"
-            >
-              <SparkIcon size={18} />
-              <span className="sr-only">{t("nav.assistant")}</span>
-            </Link>
+            {assistantEnabled && (
+              <Link
+                href="/assistant"
+                aria-current={isActive(pathname, "/assistant") ? "page" : undefined}
+                title={t("nav.assistant")}
+                className="inline-flex items-center rounded-full p-2 text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+              >
+                <SparkIcon size={18} />
+                <span className="sr-only">{t("nav.assistant")}</span>
+              </Link>
+            )}
             <LanguageSwitcher />
             {user ? (
               <>
@@ -254,7 +258,7 @@ export function SiteHeader({
         {menuOpen && (
           <nav id="mobile-menu" aria-label={t("shell.mobileNav")} className="border-t border-border lg:hidden">
             <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-              <MenuLink href="/assistant" onNavigate={() => setMenuOpen(false)}>{t("nav.assistant")}</MenuLink>
+              {assistantEnabled && <MenuLink href="/assistant" onNavigate={() => setMenuOpen(false)}>{t("nav.assistant")}</MenuLink>}
               {user ? (
                 <>
                   <MenuLink href="/messages" onNavigate={() => setMenuOpen(false)}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isFixtureMode } from "@/lib/simulated-clock";
 import type { Metadata } from "next";
 import { Card, Notice, PageShell } from "@/components/ui";
 import { ArrowIcon } from "@/components/icons";
@@ -58,7 +59,7 @@ export default async function NeighborhoodsPage() {
         ))}
       </ul>
 
-      <p className="text-sm text-foreground-muted">{t("neighborhoods.demoNote")}</p>
+      {isFixtureMode() && <p className="text-sm text-foreground-muted">{t("neighborhoods.demoNote")}</p>}
     </PageShell>
   );
 }

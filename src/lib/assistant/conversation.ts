@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
+import { currentDateIso, isSimulatedPast } from "@/lib/simulated-clock";
 import { listActivities } from "@/lib/data/activities";
 import { scoreActivities } from "@/lib/data/recommendations";
 import { getUserInterests } from "@/lib/data/interests";
@@ -202,7 +202,7 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
       break;
     case "greeting":
       reply = {
-        text: i.t("assistant.greeting", { date: i.longDate(SIMULATED_NOW_ISO) }),
+        text: i.t("assistant.greeting", { date: i.longDate(currentDateIso()) }),
         cards: [],
         suggestions: defaultSuggestions(i),
         source: "rules",
@@ -230,7 +230,7 @@ export async function respondToChat(input: ChatInput): Promise<ChatReply> {
     try {
       const text = await generateGroundedText({
         history: input.messages.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 500) })),
-        facts: { simulatedToday: i.longDate(SIMULATED_NOW_ISO), rulesAnswer: reply.text, records: reply.cards },
+        facts: { simulatedToday: i.longDate(currentDateIso()), rulesAnswer: reply.text, records: reply.cards },
       });
       reply = { ...reply, text, source: "ai" };
     } catch (err) {

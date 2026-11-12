@@ -4,7 +4,7 @@ import type { Catalog } from "../catalog";
 export const common = {
   // Brand + shell
   "brand.name": { en: "Human Network", sq: "Human Network" },
-  "brand.tagline": { en: "Prishtina 2036 · demo", sq: "Prishtina 2036 · demo" },
+  "brand.tagline": { en: "Prishtina", sq: "Prishtina" },
   "shell.skip": { en: "Skip to main content", sq: "Kalo te përmbajtja kryesore" },
   "shell.openMenu": { en: "Open menu", sq: "Hap menynë" },
   "shell.closeMenu": { en: "Close menu", sq: "Mbyll menynë" },
@@ -12,13 +12,13 @@ export const common = {
   "shell.mainNav": { en: "Main", sq: "Kryesore" },
   "shell.mobileNav": { en: "Main navigation", sq: "Navigimi kryesor" },
   "shell.language": { en: "Language", sq: "Gjuha" },
-  "shell.demoBadge": { en: "Simulated demo — Prishtina 2036", sq: "Demonstrim i simuluar — Prishtina 2036" },
+  "shell.demoBadge": { en: "Human Network — Prishtina", sq: "Human Network — Prishtinë" },
   "shell.unread": { en: "{n} unread", sq: "{n} të palexuara" },
 
-  "meta.title": { en: "Human Network — Prishtina 2036 (demo)", sq: "Human Network — Prishtina 2036 (demo)" },
+  "meta.title": { en: "Human Network — Prishtina", sq: "Human Network — Prishtina" },
   "meta.description": {
-    en: "Find something to do in Prishtina, go with a friend, make a plan and help your city through BRIDGE. A fictional 2036 demo — all people and events are simulated.",
-    sq: "Gjej diçka për të bërë në Prishtinë, shko me një mik, bëj një plan dhe ndihmo qytetin përmes BRIDGE. Demo fiktive e vitit 2036 — të gjithë personat dhe ngjarjet janë të simuluara.",
+    en: "Find what is happening in Prishtina, join communities and help improve your city. An independent platform; listings link to their original sources.",
+    sq: "Gjej çfarë ndodh në Prishtinë, bashkohu me komunitete dhe ndihmo të përmirësohet qyteti yt. Platformë e pavarur; listimet lidhen me burimet origjinale.",
   },
 
   // Navigation
@@ -138,5 +138,10 @@ export const common = {
     en: "Everyone and everything here is fictional. “Today” is simulated: {date}.",
     sq: "Gjithçka dhe të gjithë këtu janë fiktivë. “Sot” është i simuluar: {date}.",
   },
+  "footer.independent": {
+    en: "Human Network is an independent platform. It is not run by, or partnered with, the Municipality of Prishtina; official notices are attributed to their source.",
+    sq: "Human Network është platformë e pavarur. Nuk drejtohet nga Komuna e Prishtinës dhe nuk është partnere e saj; njoftimet zyrtare i atribuohen burimit të tyre.",
+  },
+  "footer.safety": { en: "Safety and help", sq: "Siguria dhe ndihma" },
   "footer.nav": { en: "Footer", sq: "Fundi i faqes" },
 } as const satisfies Catalog;

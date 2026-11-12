@@ -1,3 +1,4 @@
+import { assistantEnabled } from "@/lib/features";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader
           user={user ? { name: user.name, role: user.role, isDemoVisitor: user.isDemoVisitor } : null}
           devMode={devMode}
+          assistantEnabled={assistantEnabled()}
           unreadCount={unreadCount}
           unreadMessages={unreadMessages}
           pendingInvites={pendingInvites}

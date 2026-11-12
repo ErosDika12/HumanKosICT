@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { currentDateIso } from "@/lib/simulated-clock";
 import { addDaysIso } from "@/lib/time-window";
 
 /**
@@ -83,12 +83,12 @@ export interface ReminderItem {
  * or sent for an RSVP that was canceled.
  */
 export async function listReminders(userId: string, withinDays = 6): Promise<ReminderItem[]> {
-  const to = addDaysIso(SIMULATED_NOW_ISO, withinDays);
+  const to = addDaysIso(currentDateIso(), withinDays);
   const rows = await prisma.rsvp.findMany({
     where: {
       userId,
       status: "CONFIRMED",
-      activity: { status: "PUBLISHED", date: { gte: SIMULATED_NOW_ISO, lte: to } },
+      activity: { status: "PUBLISHED", date: { gte: currentDateIso(), lte: to } },
     },
     select: { activity: { select: { slug: true, title: true, titleSq: true, date: true, startTime: true, venueName: true } } },
   });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isFixtureMode } from "@/lib/simulated-clock";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ActivityCard } from "@/components/ActivityCard";
@@ -129,7 +130,7 @@ export default async function NeighborhoodPage({ params, searchParams }: PagePro
         </ButtonLink>
       </section>
 
-      <p className="text-sm text-foreground-muted">{t("neighborhoods.demoNote")}</p>
+      {isFixtureMode() && <p className="text-sm text-foreground-muted">{t("neighborhoods.demoNote")}</p>}
     </PageShell>
   );
 }

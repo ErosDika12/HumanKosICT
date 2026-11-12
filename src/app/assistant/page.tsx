@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { assistantEnabled } from "@/lib/features";
 import { AssistantChat } from "@/components/AssistantChat";
 import { PageShell, Pill } from "@/components/ui";
 import { isAiProviderConfigured } from "@/lib/assistant/ai-provider";
@@ -11,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  if (!assistantEnabled()) notFound();
   const { q } = await searchParams;
   const { t } = await getI18n();
   const user = await getCurrentUser();

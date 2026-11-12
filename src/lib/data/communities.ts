@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { CATEGORY_FROM_DB, CATEGORY_TO_DB } from "./mappers";
 import type { ActivityCategory } from "@/lib/types";
 import { assertBoundedText, MAX_LONG_TEXT } from "@/lib/validation";
-import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { currentDateIso } from "@/lib/simulated-clock";
 
 export class CommunityAuthorizationError extends Error {}
 
@@ -30,7 +30,7 @@ export async function listCommunities(): Promise<CommunitySummary[]> {
     include: {
       _count: { select: { memberships: { where: { status: "ACTIVE", user: { isDemoVisitor: false } } } } },
       activities: {
-        where: { status: "PUBLISHED", date: { gte: SIMULATED_NOW_ISO } },
+        where: { status: "PUBLISHED", date: { gte: currentDateIso() } },
         orderBy: [{ date: "asc" }, { startTime: "asc" }],
         take: 1,
         select: { slug: true, title: true, date: true, startTime: true, areaEn: true },
@@ -124,8 +124,8 @@ export async function getCommunityBySlug(
     status: community.status === "DRAFT" ? "draft" : "published",
     organizerName: community.organizer.name,
     organizerId: community.organizerId,
-    upcomingActivities: community.activities.filter((a) => a.date >= SIMULATED_NOW_ISO),
-    pastActivities: community.activities.filter((a) => a.date < SIMULATED_NOW_ISO).reverse(),
+    upcomingActivities: community.activities.filter((a) => a.date >= currentDateIso()),
+    pastActivities: community.activities.filter((a) => a.date < currentDateIso()).reverse(),
     projects: community.projects.map((p) => ({
       slug: p.slug,
       title: p.title,

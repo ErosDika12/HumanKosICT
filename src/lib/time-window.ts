@@ -6,7 +6,7 @@
  * the data", so 28–29 June was labelled "Happening this weekend" while the
  * simulated today was Monday 16 June.
  */
-import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { currentDateIso } from "@/lib/simulated-clock";
 
 export type TimeWindow = "week" | "weekend" | "next-weekend" | "weekday";
 
@@ -55,7 +55,7 @@ export function weekendRange(todayIso: string, scope: "this" | "next"): { from: 
 }
 
 /** Inclusive date range for a window, or null for "weekday" (a day-of-week rule, not a range). */
-export function windowRange(when: TimeWindow, todayIso: string = SIMULATED_NOW_ISO): { from: string; to: string } | null {
+export function windowRange(when: TimeWindow, todayIso: string = currentDateIso()): { from: string; to: string } | null {
   switch (when) {
     case "week":
       return { from: todayIso, to: addDaysIso(todayIso, 6) };
@@ -68,7 +68,7 @@ export function windowRange(when: TimeWindow, todayIso: string = SIMULATED_NOW_I
   }
 }
 
-export function matchesWindow(isoDate: string, when: TimeWindow, todayIso: string = SIMULATED_NOW_ISO): boolean {
+export function matchesWindow(isoDate: string, when: TimeWindow, todayIso: string = currentDateIso()): boolean {
   if (when === "weekday") {
     const dow = weekdayOf(isoDate);
     return dow >= 1 && dow <= 5;
@@ -103,7 +103,7 @@ export function shortDate(isoDate: string): string {
  * "Today", "Tomorrow", "This weekend", "Next weekend", otherwise the plain date.
  * Never calls a past date "upcoming" and never calls a far-off weekend "this weekend".
  */
-export function relativeDayLabel(isoDate: string, todayIso: string = SIMULATED_NOW_ISO): string {
+export function relativeDayLabel(isoDate: string, todayIso: string = currentDateIso()): string {
   if (isoDate < todayIso) return "Already happened";
   if (isoDate === todayIso) return "Today";
   if (isoDate === addDaysIso(todayIso, 1)) return "Tomorrow";

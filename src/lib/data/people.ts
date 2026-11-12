@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { findMatches, type PersonInput, type PersonMatch } from "./people-matching";
 import type { InterestId } from "@/lib/types";
 import { assertBoundedText, MAX_SHORT_TEXT } from "@/lib/validation";
+import { isFixtureMode } from "@/lib/simulated-clock";
 
 async function toPersonInput(userId: string): Promise<PersonInput | null> {
   const user = await prisma.user.findUnique({
@@ -44,7 +45,8 @@ export async function listMatches(viewerId: string): Promise<PersonMatch[]> {
   const [otherUsers, blocksMade, blocksReceived] = await Promise.all([
     prisma.user.findMany({
       // One-click demo visitors are isolated: never shown to anyone else.
-      where: { id: { not: viewerId }, isDiscoverable: true, isDemoVisitor: false },
+      // Only real, opted-in people are ever suggested: seeded personas appear only in fixture mode.
+      where: { id: { not: viewerId }, isDiscoverable: true, isDemoVisitor: false, ...(isFixtureMode() ? {} : { isDemoPersona: false }) },
       select: { id: true },
     }),
     prisma.block.findMany({ where: { blockerId: viewerId }, select: { blockedId: true } }),

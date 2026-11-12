@@ -9,7 +9,7 @@ import { matchesQuery } from "@/lib/data/search";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUserInterests } from "@/lib/data/interests";
 import type { ActivityCategory, InterestId } from "@/lib/types";
-import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
+import { currentDateIso, isSimulatedPast } from "@/lib/simulated-clock";
 import { isTimeWindow, type TimeWindow } from "@/lib/time-window";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -138,7 +138,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-col gap-1">
         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{t("discover.title")}</h1>
-        <p className="text-sm text-foreground-muted">{t("discover.today", { date: longDate(SIMULATED_NOW_ISO) })}</p>
+        <p className="text-sm text-foreground-muted">{t("discover.today", { date: longDate(currentDateIso()) })}</p>
       </div>
 
       {/* Explore also covers communities and neighborhood help, so they are one tap from here. */}

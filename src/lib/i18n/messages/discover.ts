@@ -2,7 +2,7 @@ import type { Catalog } from "../catalog";
 
 export const discover = {
   "discover.title": { en: "What's on in Prishtina", sq: "Çfarë ka në Prishtinë" },
-  "discover.today": { en: "In the demo, today is {date}.", sq: "Në demo, sot është {date}." },
+  "discover.today": { en: "Today is {date}.", sq: "Sot është {date}." },
   "discover.searchLabel": { en: "Search activities", sq: "Kërko aktivitete" },
   "discover.searchPlaceholder": { en: "Search by name or topic", sq: "Kërko sipas emrit ose temës" },
   "discover.search": { en: "Search", sq: "Kërko" },

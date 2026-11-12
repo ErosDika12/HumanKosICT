@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_FROM_DB } from "./mappers";
 import { assertCommunityOrganizer, CommunityAuthorizationError } from "./communities";
-import { SIMULATED_NOW_ISO, isSimulatedPast } from "@/lib/simulated-clock";
+import { currentDateIso, isSimulatedPast } from "@/lib/simulated-clock";
 import {
   computeBridgeNextStep,
   computeBridgeStages,
@@ -47,7 +47,7 @@ export async function regenerateBridgeProposals(): Promise<void> {
       new Set(c.activities.flatMap((a) => a.interests.map((i) => i.interestId)))
     ),
     hasUpcomingActivity: c.activities.some(
-      (a) => a.status === "PUBLISHED" && a.date >= SIMULATED_NOW_ISO
+      (a) => a.status === "PUBLISHED" && a.date >= currentDateIso()
     ),
   }));
 

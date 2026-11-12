@@ -1,38 +1,39 @@
 /**
- * KOSOVO 2036 — HUMAN NETWORK runs entirely inside a fictional June 2036
- * Prishtina scenario (see docs/DEMO_DATA.md). The real wall-clock date this
- * app happens to run on is always years before 2036, so comparing a seeded
- * activity's date against `new Date()` would make every single seeded
- * activity look permanently upcoming — any feature that depends on "has
- * this already happened" (event check-in / organizer-confirmed attendance,
- * a past-event banner, the Impact page's attended-vs-upcoming split) would
- * show empty, undemoable results forever. That's not a real feature gap,
- * it's a date-math trap — so this module fixes a single, clearly-labeled
- * "today" inside the fictional scenario instead.
+ * The application's notion of "today".
  *
- * SIMULATED_NOW_ISO is NOT the real date and is never presented as one. It
- * is surfaced in the UI (see SimulatedClockNote, rendered in the footer on
- * every page) specifically so nobody mistakes it for live data — the user
- * explicitly asked for a "clearly labeled simulation date rather than
- * silently showing empty results," and this is that label.
+ * Production (and any deployed preview) runs on the REAL clock in Europe/Tirane — Kosovo's civil timezone.
+ * Local development and the automated tests run in "fixture mode": a fixed, labeled date inside the
+ * fictional 2036 development fixtures (see docs/DEMO_DATA.md) so those fixtures stay internally consistent.
+ * Fixture mode can never be active when NODE_ENV is "production".
  *
- * Every "is this activity in the past / upcoming?" comparison in this app
- * goes through this module, not `new Date()` directly, so the scenario
- * stays internally consistent. Chosen so the 6 seeded activities split
- * meaningfully: 2036-06-13 (×2) and 2036-06-14 have already happened;
- * 2036-06-17, 2036-06-20, and 2036-06-21 are still upcoming — enough real
- * fixtures for both the check-in/attendance/Impact journey (needs past
- * events) and the RSVP/cancel journey (needs upcoming ones) to work in the
- * same demo without contradicting each other.
+ * The module keeps its historical name so existing imports keep working; nothing here is simulated in production.
  */
-export const SIMULATED_NOW_ISO = "2036-06-16";
+export const TIME_ZONE = "Europe/Tirane";
 
-export const SIMULATED_NOW_LABEL = "Monday, 16 June 2036";
+/** Fixed date used only in fixture mode (development and tests). */
+const FIXTURE_TODAY_ISO = "2036-06-16";
+
+export function isFixtureMode(env: Record<string, string | undefined> = process.env): boolean {
+  return env.NODE_ENV !== "production" && env.HN_REAL_CLOCK !== "1";
+}
+
+export function nowDate(): Date {
+  return new Date();
+}
+
+/** The calendar date "YYYY-MM-DD" in Europe/Tirane for an instant. */
+export function isoDateInTirane(instant: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(instant);
+}
+
+export function currentDateIso(): string {
+  return isFixtureMode() ? FIXTURE_TODAY_ISO : isoDateInTirane(nowDate());
+}
 
 export function isSimulatedPast(isoDate: string): boolean {
-  return isoDate < SIMULATED_NOW_ISO;
+  return isoDate < currentDateIso();
 }
 
 export function isSimulatedUpcoming(isoDate: string): boolean {
-  return isoDate >= SIMULATED_NOW_ISO;
+  return isoDate >= currentDateIso();
 }

@@ -80,6 +80,7 @@ export default async function PeoplePage({
           </Card>
         )}
 
+        {preview.length > 0 && (
         <section aria-labelledby="preview-title" className="flex flex-col gap-4">
           <h2 id="preview-title" className="font-display text-2xl font-semibold text-foreground">
             {t("friends.guestPreview")} <span className="text-base font-normal text-foreground-muted">({preview.length})</span>
@@ -113,6 +114,7 @@ export default async function PeoplePage({
             ))}
           </ul>
         </section>
+        )}
       </PageShell>
     );
   }

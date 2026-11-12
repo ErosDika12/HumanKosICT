@@ -3,6 +3,8 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient as PostgresPrismaClient } from "@/generated/prisma-postgres";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { pgSslOptions } from "@/lib/db-ssl";
+import { withRealContentFilter } from "@/lib/real-content-filter";
+import { isFixtureMode } from "@/lib/simulated-clock";
 
 /**
  * Server-only Prisma singleton. Next.js dev reloads modules on every edit;
@@ -65,8 +67,18 @@ function createClient() {
   return new PrismaClient({ adapter, log: logLevels });
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
+const baseClient = globalForPrisma.prisma ?? createClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = baseClient;
 }
+
+/**
+ * The client the whole app shares. Outside fixture mode (production and deployed previews) every read is
+ * restricted to real content — see src/lib/real-content-filter.ts. Fixture mode (local development and the
+ * test suite) sees the 2036 development fixtures.
+ */
+export const prisma: PrismaClient = isFixtureMode() ? baseClient : withRealContentFilter(baseClient);
+
+/** Unfiltered client, only for fixture tooling and the filter's own tests. */
+export const unfilteredPrisma: PrismaClient = baseClient;

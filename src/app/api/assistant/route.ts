@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assistantEnabled } from "@/lib/features";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { respondToChat, type ChatMessage, type ChatState } from "@/lib/assistant/conversation";
 import { consumeAssistantQuota } from "@/lib/assistant/usage";
@@ -45,6 +46,7 @@ function parseBody(raw: unknown): { messages: ChatMessage[]; state: ChatState } 
 }
 
 export async function POST(req: Request) {
+  if (!assistantEnabled()) return NextResponse.json({ error: "Not available." }, { status: 404 });
   if (!sameOrigin(req)) return NextResponse.json({ error: "Cross-site requests are not allowed." }, { status: 403 });
 
   let raw: unknown;

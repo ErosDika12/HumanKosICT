@@ -12,7 +12,7 @@ import { listCommunities } from "@/lib/data/communities";
 import { listNeeds } from "@/lib/data/needs";
 import { NEIGHBORHOODS } from "@/lib/neighborhoods";
 import { listFollowedSlugs } from "@/lib/data/follows";
-import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { currentDateIso, isFixtureMode } from "@/lib/simulated-clock";
 import { localizeCommunityDescription } from "@/lib/i18n/content";
 import { getProgress } from "@/lib/data/progress";
 import { HumanQuest } from "@/components/HumanQuest";
@@ -77,7 +77,7 @@ export default async function HomePage() {
   const orderedNeighborhoods = [...NEIGHBORHOODS].sort((a, b) => Number(followed.has(b.slug)) - Number(followed.has(a.slug)));
   const open = upcoming.filter((a) => a.capacity - a.rsvpCount > 0);
   const todayWeekend = open
-    .filter((a) => a.date === SIMULATED_NOW_ISO || matchesWindow(a.date, "weekend"))
+    .filter((a) => a.date === currentDateIso() || matchesWindow(a.date, "weekend"))
     .sort((x, y) => (x.date + x.startTime).localeCompare(y.date + y.startTime))
     .slice(0, 3);
   const shownSlugs = new Set(todayWeekend.map((a) => a.slug));
@@ -263,7 +263,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <p className="text-sm text-foreground-muted">{t("home.demoNote")}</p>
+        {isFixtureMode() && <p className="text-sm text-foreground-muted">{t("home.demoNote")}</p>}
       </div>
     </>
   );

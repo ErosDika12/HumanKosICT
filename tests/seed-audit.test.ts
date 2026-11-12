@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/lib/prisma";
 import { ACTIVITIES } from "@/lib/demo-data";
-import { SIMULATED_NOW_ISO } from "@/lib/simulated-clock";
+import { currentDateIso } from "@/lib/simulated-clock";
 import { listCommunities, getCommunityBySlug } from "@/lib/data/communities";
 import { listActivities } from "@/lib/data/activities";
 
@@ -27,7 +27,7 @@ describe("seeded data does not contradict itself", () => {
     for (const need of needs) {
       if (!need.community) continue;
       if (!/\b(full|at capacity|fills up)\b/i.test(need.description)) continue;
-      const open = need.community.activities.filter((a) => a.date >= SIMULATED_NOW_ISO && a.simulatedRsvpBaseline < a.capacity);
+      const open = need.community.activities.filter((a) => a.date >= currentDateIso() && a.simulatedRsvpBaseline < a.capacity);
       assert.equal(open.length, 0, `need "${need.description}" claims full, but ${open.map((a) => a.slug).join(", ")} still has places`);
     }
   });
@@ -53,17 +53,17 @@ describe("seeded data does not contradict itself", () => {
     const detail = await getCommunityBySlug("gjelber-per-prishtinen");
     assert.ok(detail);
     assert.ok(detail.upcomingActivities.length > 0);
-    for (const a of detail.upcomingActivities) assert.ok(a.date >= SIMULATED_NOW_ISO, `${a.slug} (${a.date}) is not upcoming`);
+    for (const a of detail.upcomingActivities) assert.ok(a.date >= currentDateIso(), `${a.slug} (${a.date}) is not upcoming`);
     assert.ok(detail.pastActivities.some((a) => a.slug === "pastrim-parku-gjelber"));
     assert.ok(!detail.upcomingActivities.some((a) => a.slug === "pastrim-parku-gjelber"), "14 June clean-up already happened");
 
     for (const c of await listCommunities()) {
-      if (c.nextActivity) assert.ok(c.nextActivity.date >= SIMULATED_NOW_ISO, `${c.slug} next activity is in the past`);
+      if (c.nextActivity) assert.ok(c.nextActivity.date >= currentDateIso(), `${c.slug} next activity is in the past`);
     }
   });
 
   it("the unfiltered Discover list, once past activities are removed, starts with the earliest upcoming date", async () => {
-    const upcoming = (await listActivities()).filter((a) => a.date >= SIMULATED_NOW_ISO);
+    const upcoming = (await listActivities()).filter((a) => a.date >= currentDateIso());
     const dates = upcoming.map((a) => a.date);
     assert.deepEqual(dates, [...dates].sort());
   });
